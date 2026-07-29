@@ -32,6 +32,9 @@ fillcolor = (100,100,100)
 
 font = pygame.font.Font("Minecraftia.ttf", 30)
 gemtouched = (0,0,0)
+
+
+
 def setcolor():
     global gemtouched
     global color
@@ -72,6 +75,21 @@ def drawgrid():
         for y in range (8):
             drawsquare(x,y)
 
+def drawtriangle(tricolor, rotation, x, y):
+    x = x*sizex+border*1.25
+    y = y*sizey+border
+    match rotation:
+        case 1:
+            pygame.draw.polygon(screen,tricolor,( (x,y), (x+sizex,y) ,(x, y+sizey) ))
+        case 2:
+            pygame.draw.polygon(screen,tricolor,( (x,y), (x+sizex,y) ,(x+sizex, y+sizey) ))
+        case 3:
+            pygame.draw.polygon(screen,tricolor,( (x,y), (x+sizex,y+sizey) ,(x, y+sizey) ))
+        case 4:
+            pygame.draw.polygon(screen,tricolor,( (x+sizex,y+sizey-1), (x+sizex,y) ,(x, y+sizey-1) ))
+        case 5:
+            rectangle=pygame.Rect((x),(y),(sizex),(sizey))
+            pygame.draw.rect(screen,(tricolor), rectangle)
 cords = {}
 
 for x in range (10):
@@ -79,12 +97,24 @@ for x in range (10):
         cords[(x,y)] = ""
 
 
+
+
+
 setcolor()
 screen.fill(fillcolor)
+
 pygame.display.update()
 
 
 drawgrid()
+if 1== 1:
+    drawtriangle((255,0,0),2 ,4,3)
+    drawtriangle((255,0,0),5 ,4,4)
+    drawtriangle((255,0,0),3 ,4,5)
+if 1== 0:
+    drawtriangle((255,0,0),2 ,4,5)
+    drawtriangle((255,0,0),5 ,5,5)
+    drawtriangle((255,0,0),3 ,6,5)
 pygame.display.update()
 
 
