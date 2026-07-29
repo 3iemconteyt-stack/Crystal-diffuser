@@ -1,0 +1,101 @@
+import pygame
+import time 
+pygame.init()
+pygame.font.init()
+
+gamesize = 800
+border = 100
+if 0==1:
+    screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
+    pygame.display.set_caption("Crystal Diffuser")
+    screen_width = screen.get_width()
+    screen_hight = screen.get_height()
+if 1==1:
+    screen_hight = gamesize
+    screen_width = screen_hight*1.25
+    screen = pygame.display.set_mode((screen_width, screen_hight))
+    pygame.display.set_caption("Crystal Diffuser")
+    clock = pygame.time.Clock()
+
+sizex = (screen_width-border*2*1.25)/10
+sizey = (screen_hight-border*2)/8
+
+
+
+
+color1 = (50,50,50)
+color2 = (70,70,70)
+fillcolor = (100,100,100)
+
+
+
+
+font = pygame.font.Font("Minecraftia.ttf", 30)
+gemtouched = (0,0,0)
+def setcolor():
+    global gemtouched
+    global color
+    match gemtouched:
+        case (0,0,0):
+            color = (255,255,255)
+        case (1,0,0):
+            color = (255,0,0)
+        case (0,1,0):
+            color = (255,255,0)
+        case (0,0,1):
+            color = (0,0,255)
+        case (1,1,0):
+            color = (255,128,0)
+        case (0,1,1):
+            color = (0,255,0)
+        case (1,0,1):
+            color = (255,0,255)
+        case (1,1,1):
+            color = (0,0,0)
+
+def drawsquare(x,y):
+        rectangle = pygame.Rect((x*sizex+border*1.25),(y*sizey+border),(sizex),(sizey))
+        if int(y)%2 == 1:
+            if int(x)%2 == 1 :
+                squarecolor = color1
+            else:
+                squarecolor = color2
+        else:
+            if int(x)%2 == 1 :
+                squarecolor = color2
+            else:
+                squarecolor = color1
+        pygame.draw.rect(screen,(squarecolor), rectangle)
+
+def drawgrid():
+    for x in range(10):
+        for y in range (8):
+            drawsquare(x,y)
+
+cords = {}
+
+for x in range (10):
+    for y in range (8):
+        cords[(x,y)] = ""
+
+
+setcolor()
+screen.fill(fillcolor)
+pygame.display.update()
+
+
+drawgrid()
+pygame.display.update()
+
+
+
+
+
+
+
+running = True
+while running:
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            running = False 
+pygame.quit()
