@@ -35,10 +35,8 @@ gemtouched = (0,0,0)
 
 
 
-def setcolor():
-    global gemtouched
-    global color
-    match gemtouched:
+def getcolor(item):
+    match item:
         case (0,0,0):
             color = (255,255,255)
         case (1,0,0):
@@ -55,6 +53,7 @@ def setcolor():
             color = (255,0,255)
         case (1,1,1):
             color = (0,0,0)
+    return color
 
 def drawsquare(x,y):
         rectangle = pygame.Rect((x*sizex+border*1.25),(y*sizey+border),(sizex),(sizey))
@@ -80,40 +79,74 @@ def drawtriangle(tricolor, rotation, x, y):
     y = y*sizey+border
     match rotation:
         case 1:
-            pygame.draw.polygon(screen,tricolor,( (x,y), (x+sizex,y) ,(x, y+sizey) ))
-        case 2:
             pygame.draw.polygon(screen,tricolor,( (x,y), (x+sizex,y) ,(x+sizex, y+sizey) ))
+        case 2:
+            pygame.draw.polygon(screen,tricolor,( (x,y), (x+sizex,y) ,(x, y+sizey) ))
         case 3:
             pygame.draw.polygon(screen,tricolor,( (x,y), (x+sizex,y+sizey) ,(x, y+sizey) ))
         case 4:
             pygame.draw.polygon(screen,tricolor,( (x+sizex,y+sizey-1), (x+sizex,y) ,(x, y+sizey-1) ))
-        case 5:
+        case 9:
             rectangle=pygame.Rect((x),(y),(sizex),(sizey))
             pygame.draw.rect(screen,(tricolor), rectangle)
+
+def drawshape(shape,x,y):
+    shapecolor = shape[0]
+    for piece in shape[1:]:
+        drawtriangle((getcolor(shapecolor)),piece[0],piece[1]+x,piece[2]+y)
+        cords[str(piece[1]+x)+","+str(piece[2]+y)] = (piece[0],shapecolor)
+
+def rotateshape(shape,rotation):
+    rotation = rotation-(int(rotation/4))
+    
+    if rotation > 0:
+        positive = 1
+    else:
+        positive = -1 
+    outshape = [shape[0]]
+    for piece in shape[1:]:
+        for i in range(rotation):
+            piece = [piece[0], piece[2]*positive*-1, piece[1]*positive]
+            if piece[0] != 9:
+                piece[0] += positive
+        if piece[0] > 4:
+            piece[0] -= 4
+        if piece[0] < 1:
+            piece[0] += 4
+        outshape.append(piece)
+    print(outshape)
+    return outshape
+
+
 cords = {}
+
 
 for x in range (10):
     for y in range (8):
         cords[(x,y)] = ""
 
-
-
-
-
-setcolor()
 screen.fill(fillcolor)
-
 pygame.display.update()
-
-
 drawgrid()
-if 1== 1:
+
+
+
+
+
+
+
+rotateshape([(1,0,0),(9,1,-2,),(3,1,0),(1,-1,0)],1)
+
+drawshape([(1,0,0),(9,0,0,),(3,1,0),(1,-1,0)],3,2)
+
+#print(cords.get("3,2"))
+if 1== 0:
     drawtriangle((255,0,0),2 ,4,3)
-    drawtriangle((255,0,0),5 ,4,4)
+    drawtriangle((255,0,0),9 ,4,4)
     drawtriangle((255,0,0),3 ,4,5)
 if 1== 0:
-    drawtriangle((255,0,0),2 ,4,5)
-    drawtriangle((255,0,0),5 ,5,5)
+    drawtriangle((255,0,0),1 ,4,5)
+    drawtriangle((255,0,0),9 ,5,5)
     drawtriangle((255,0,0),3 ,6,5)
 pygame.display.update()
 
