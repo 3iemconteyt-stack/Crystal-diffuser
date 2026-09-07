@@ -16,24 +16,12 @@ if 1==1:
     screen = pygame.display.set_mode((screen_width, screen_hight))
     pygame.display.set_caption("Crystal Diffuser")
     clock = pygame.time.Clock()
-
 sizex = (screen_width-border*2*1.25)/10
 sizey = (screen_hight-border*2)/8
-
-
-
-
 color1 = (50,50,50)
 color2 = (70,70,70)
 fillcolor = (100,100,100)
-
-
-
-
 font = pygame.font.Font("Minecraftia.ttf", 30)
-gemtouched = (0,0,0)
-
-
 
 def getcolor(item):
     match item:
@@ -54,7 +42,6 @@ def getcolor(item):
         case (1,1,1):
             color = (0,0,0)
     return color
-
 def drawsquare(x,y):
         rectangle = pygame.Rect((x*sizex+border*1.25),(y*sizey+border),(sizex),(sizey))
         if int(y)%2 == 1:
@@ -68,12 +55,10 @@ def drawsquare(x,y):
             else:
                 squarecolor = color1
         pygame.draw.rect(screen,(squarecolor), rectangle)
-
 def drawgrid():
     for x in range(10):
         for y in range (8):
             drawsquare(x,y)
-
 def drawtriangle(tricolor, rotation, x, y):
     x = x*sizex+border*1.25
     y = y*sizey+border
@@ -89,13 +74,11 @@ def drawtriangle(tricolor, rotation, x, y):
         case 9:
             rectangle=pygame.Rect((x),(y),(sizex),(sizey))
             pygame.draw.rect(screen,(tricolor), rectangle)
-
 def drawshape(shape,x,y):
     shapecolor = shape[0]
     for piece in shape[1:]:
         drawtriangle((getcolor(shapecolor)),piece[0],piece[1]+x,piece[2]+y)
         cords[str(piece[1]+x)+","+str(piece[2]+y)] = (piece[0],shapecolor)
-
 def rotateshape(shape,rotation):
     rotation = rotation-(int(rotation/4))
     
@@ -116,10 +99,7 @@ def rotateshape(shape,rotation):
         outshape.append(piece)
     return outshape
 
-
 cords = {}
-
-
 for x in range (10):
     for y in range (8):
         cords[(x,y)] = "void"
@@ -127,37 +107,21 @@ for x in range (10):
 screen.fill(fillcolor)
 pygame.display.update()
 drawgrid()
-
-
-
-
-
-drawshape(rotateshape([(1,0,0),(9,0,0,),(3,1,0),(1,-1,0)],1),3,2)
-
-#drawshape([(1,0,0),(9,0,0,),(3,1,0),(1,-1,0)],3,2)
-
-
-#print(cords.get("0, 0"))
-print(cords)
-if 1== 0:
-    drawtriangle((255,0,0),2 ,4,3)
-    drawtriangle((255,0,0),9 ,4,4)
-    drawtriangle((255,0,0),3 ,4,5)
-if 1== 0:
-    drawtriangle((255,0,0),1 ,4,5)
-    drawtriangle((255,0,0),9 ,5,5)
-    drawtriangle((255,0,0),3 ,6,5)
 pygame.display.update()
-
-
-
-
-
-
-
 running = True
 while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False 
+        if event.type == pygame.MOUSEBUTTONUP:
+            if event.button == 1:
+                mousex, mousey = pygame.mouse.get_pos()
+                mouseconvertx = round(((mousex-border*1.25)/sizex)-0.5)
+                mouseconverty = round(((mousey-border)/sizey)-0.5)
+                if mouseconvertx < 0 or mouseconvertx > 9 or mouseconverty < 0 or mouseconverty > 7:
+                    mouseconvertx = "out"
+                    mouseconverty = "side"
+                print(mouseconvertx,mouseconverty)
+                if isinstance(mouseconverty, int):
+                    print(cords.get((mouseconvertx,mouseconverty)))
 pygame.quit()
