@@ -22,7 +22,7 @@ color1 = (50,50,50)
 color2 = (70,70,70)
 fillcolor = (100,100,100)
 font = pygame.font.Font("Minecraftia.ttf", 30)
-
+pieces = []
 def getcolor(item):
     match item:
         case (0,0,0):
@@ -55,6 +55,11 @@ def drawsquare(x,y):
             else:
                 squarecolor = color1
         pygame.draw.rect(screen,(squarecolor), rectangle)
+        if cords.get((x,y)) != "void":
+            currentcell = cords.get((x,y))
+            print(currentcell)
+            print(getcolor(currentcell[1]),currentcell[0],x,y)
+            drawtriangle(getcolor(currentcell[1]),currentcell[0],x,y)
 def drawgrid():
     for x in range(10):
         for y in range (8):
@@ -68,10 +73,10 @@ def drawtriangle(tricolor, rotation, x, y):
         case 2:
             pygame.draw.polygon(screen,tricolor,( (x,y), (x+sizex-1,y) ,(x, y+sizey-1) ))
         case 3:
-            pygame.draw.polygon(screen,tricolor,( (x+1,y+1), (x+sizex-1,y+sizey-1) ,(x+1, y+sizey-1) ))
+            pygame.draw.polygon(screen,tricolor,( (x,y+1), (x+sizex-1,y+sizey-1) ,(x, y+sizey-1) ))
         case 4:
             pygame.draw.polygon(screen,tricolor,( (x+sizex-1,y+sizey-1), (x+sizex-1,y) ,(x, y+sizey-1) ))
-        case 9:
+        case 5:
             rectangle=pygame.Rect((x),(y),(sizex),(sizey))
             pygame.draw.rect(screen,(tricolor), rectangle)
 def drawshape(shape,x,y):
@@ -116,12 +121,26 @@ while running:
         if event.type == pygame.MOUSEBUTTONUP:
             if event.button == 1:
                 mousex, mousey = pygame.mouse.get_pos()
-                mouseconvertx = round(((mousex-border*1.25)/sizex)-0.5)
-                mouseconverty = round(((mousey-border)/sizey)-0.5)
-                if mouseconvertx < 0 or mouseconvertx > 9 or mouseconverty < 0 or mouseconverty > 7:
-                    mouseconvertx = "out"
-                    mouseconverty = "side"
-                print(mouseconvertx,mouseconverty)
-                if isinstance(mouseconverty, int):
-                    print(cords.get((mouseconvertx,mouseconverty)))
+                mx = round(((mousex-border*1.25)/sizex)-0.5)
+                my = round(((mousey-border)/sizey)-0.5)
+                if mx < 0 or mx > 9 or my < 0 or my > 7:
+                    mx = "out"
+                    my = "side"
+                if isinstance(my, int):
+                    currentcell = cords.get((mx,my))
+                    cell = cords.get((mx,my))
+                    if currentcell == "void": 
+                        cords[(mx,my)] = (5,(1,0,0))
+                        pieces.append(cords[(mx,my)])
+                    if currentcell != "void":
+                        index = pieces.index(cords.get((mx,my)))
+                        cell = (cell[0]+1,cell[1])
+                        cell = (cell[0]-(int(cell[0]/5))*5, cell[1])
+                        cords[(mx,my)] = cell
+                        pieces[index] = cell
+                    print(pieces)
+
+    drawgrid()
+    pygame.display.update()
+                        
 pygame.quit()

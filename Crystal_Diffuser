@@ -68,6 +68,9 @@ def drawsquare(x,y):
             else:
                 squarecolor = color1
         pygame.draw.rect(screen,(squarecolor), rectangle)
+        if cords.get((x,y)) != "void":
+            currentcell = cords.get((x,y))
+            drawtriangle(getcolor(currentcell[1]),currentcell[0],x,y)
 
 def drawgrid():
     for x in range(10):
@@ -83,7 +86,7 @@ def drawtriangle(tricolor, rotation, x, y):
         case 2:
             pygame.draw.polygon(screen,tricolor,( (x,y), (x+sizex-1,y) ,(x, y+sizey-1) ))
         case 3:
-            pygame.draw.polygon(screen,tricolor,( (x+1,y+1), (x+sizex-1,y+sizey-1) ,(x+1, y+sizey-1) ))
+            pygame.draw.polygon(screen,tricolor,( (x,y+1), (x+sizex-1,y+sizey-1) ,(x, y+sizey-1) ))
         case 4:
             pygame.draw.polygon(screen,tricolor,( (x+sizex-1,y+sizey-1), (x+sizex-1,y) ,(x, y+sizey-1) ))
         case 9:
@@ -94,10 +97,10 @@ def drawshape(shape,x,y):
     shapecolor = shape[0]
     for piece in shape[1:]:
         drawtriangle((getcolor(shapecolor)),piece[0],piece[1]+x,piece[2]+y)
-        cords[str(piece[1]+x)+","+str(piece[2]+y)] = (piece[0],shapecolor)
+        cords[(piece[1]+x),(piece[2]+y)] = (piece[0],shapecolor)
 
 def rotateshape(shape,rotation):
-    rotation = rotation-(int(rotation/4))
+    rotation = rotation-(int(rotation/4))*4
     
     if rotation > 0:
         positive = 1
@@ -132,13 +135,12 @@ drawgrid()
 
 
 
-drawshape(rotateshape([(1,0,0),(9,0,0,),(3,1,0),(1,-1,0)],1),3,2)
-
+drawshape(rotateshape([(1,0,0),(9,0,0,),(3,1,0),(1,-1,0)],2),3,2)
 #drawshape([(1,0,0),(9,0,0,),(3,1,0),(1,-1,0)],3,2)
 
 
 #print(cords.get("0, 0"))
-print(cords)
+#print(cords)
 if 1== 0:
     drawtriangle((255,0,0),2 ,4,3)
     drawtriangle((255,0,0),9 ,4,4)
