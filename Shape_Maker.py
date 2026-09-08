@@ -23,6 +23,7 @@ color2 = (70,70,70)
 fillcolor = (100,100,100)
 font = pygame.font.Font("Minecraftia.ttf", 30)
 pieces = []
+sc = (1,0,0)
 def getcolor(item):
     match item:
         case (0,0,0):
@@ -57,8 +58,6 @@ def drawsquare(x,y):
         pygame.draw.rect(screen,(squarecolor), rectangle)
         if cords.get((x,y)) != "void":
             currentcell = cords.get((x,y))
-            print(currentcell)
-            print(getcolor(currentcell[1]),currentcell[0],x,y)
             drawtriangle(getcolor(currentcell[1]),currentcell[0],x,y)
 def drawgrid():
     for x in range(10):
@@ -127,18 +126,36 @@ while running:
                     mx = "out"
                     my = "side"
                 if isinstance(my, int):
-                    currentcell = cords.get((mx,my))
                     cell = cords.get((mx,my))
-                    if currentcell == "void": 
-                        cords[(mx,my)] = (5,(1,0,0))
-                        pieces.append(cords[(mx,my)])
-                    if currentcell != "void":
-                        index = pieces.index(cords.get((mx,my)))
+
+                    #a cords cell SHOULD look like (rotation,(r,y,b))
+                    #a shape cell SHOULD look like (rotation,x,y)
+                    if cell == "void": 
+                        #creates the cell
+                        cords[(mx,my)] = (1,sc)
+                        if len(pieces) == 0:
+                            origin_point = (mx,my)
+                            pieces.append((1,0,0))
+                        else:
+                            pieces.append((1,mx-origin_point[0],my-origin_point[1]))
+
+                    if cell != "void":
+                        index = pieces.index((cell[0],mx-origin_point[0],my-origin_point[1]))
+
+
+                        #rotates the cell
                         cell = (cell[0]+1,cell[1])
-                        cell = (cell[0]-(int(cell[0]/5))*5, cell[1])
-                        cords[(mx,my)] = cell
-                        pieces[index] = cell
+                        cell = (cell[0]-(int(cell[0]/6))*6, cell[1])
+                        #adds the cell to cords and shape
+                        if cell[0] == 0:
+                            cords[(mx,my)] = "void"
+                            pieces.pop(index)
+                        else:
+                            cords[(mx,my)] = cell
+                            pieces[index] = (cell[0],mx-origin_point[0],my-origin_point[1])
                     print(pieces)
+                    print()
+
 
     drawgrid()
     pygame.display.update()
