@@ -21,9 +21,9 @@ sizey = (screen_hight-border*2)/8
 color1 = (50,50,50)
 color2 = (70,70,70)
 fillcolor = (100,100,100)
-font = pygame.font.Font("Minecraftia.ttf", 30)
 pieces = []
 sc = (1,0,0)
+my_font = pygame.font.Font("Minecraftia.ttf", 30)
 def getcolor(item):
     match item:
         case (0,0,0):
@@ -102,12 +102,20 @@ def rotateshape(shape,rotation):
                     piece[0] += 4
         outshape.append(piece)
     return outshape
+def checkmousecolision(corner1x, corner1y, corner2x, corner2y):
+    if mousex > corner1x and mousey > corner1y and mousex < corner2x and mousey < corner2y:
+        return True
+    else:
+        return False
+def drawtext(text,x,y,color):
+    text_surface = my_font.render(text, False, color)
+    screen.blit(text_surface, (x,y))
 
 cords = {}
 for x in range (10):
     for y in range (8):
         cords[(x,y)] = "void"
-
+export_width, export_hight = my_font.size("export")
 screen.fill(fillcolor)
 pygame.display.update()
 drawgrid()
@@ -155,9 +163,12 @@ while running:
                             pieces[index] = (cell[0],mx-origin_point[0],my-origin_point[1])
                     print(pieces)
                     print()
-
-
+            if checkmousecolision(20,0,export_width,export_hight):
+                with open("shape.txt","a") as f:
+                    pieces.insert(0,sc)
+                    f.write("\n"+((str(pieces)).replace("5","9").replace(" ","")))
     drawgrid()
+    drawtext("export",20,0,(128,128,128))
     pygame.display.update()
                         
 pygame.quit()

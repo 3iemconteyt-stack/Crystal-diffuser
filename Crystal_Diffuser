@@ -30,7 +30,7 @@ fillcolor = (100,100,100)
 
 
 
-font = pygame.font.Font("Minecraftia.ttf", 30)
+my_font = pygame.font.Font("Minecraftia.ttf", 30)
 gemtouched = (0,0,0)
 
 
