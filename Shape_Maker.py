@@ -1,5 +1,6 @@
 import pygame
 import time 
+import json
 pygame.init()
 pygame.font.init()
 
@@ -117,10 +118,29 @@ for x in range (10):
         cords[(x,y)] = "void"
 export_width, export_hight = my_font.size("export")
 screen.fill(fillcolor)
-pygame.display.update()
-drawgrid()
-pygame.display.update()
 running = True
+
+if 1==0:
+    tshape = [(0,1,0),(1,0,0),(1,1,1),(9,1,0)]
+    testdict = {}
+    testdict["data"] = []
+    testdict["data"].append(tshape)
+    dumpsed_data = json.dumps(testdict)
+    with open("shapes.json", "w") as f:
+        json.dump(testdict, f, indent=3)
+    with open("shapes.json", "r") as f:
+        sfile = json.load(f)["data"]
+
+
+def export(shape):
+    with open("shapes.json", "r") as f:
+        sfile = json.load(f)
+
+    sfile["data"].append(shape)
+
+    with open("shapes.json", "w") as f:
+        json.dump(sfile, f, indent=3)
+
 while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
@@ -161,12 +181,26 @@ while running:
                         else:
                             cords[(mx,my)] = cell
                             pieces[index] = (cell[0],mx-origin_point[0],my-origin_point[1])
-                    print(pieces)
-                    print()
             if checkmousecolision(20,0,export_width,export_hight):
-                with open("shape.txt","a") as f:
-                    pieces.insert(0,sc)
-                    f.write("\n"+((str(pieces)).replace("5","9").replace(" ","")))
+                #with open("shape.txt","a") as f:
+                    #f.write("\n"+((str(pieces)).replace("5","9").replace(" ","")))
+                
+
+
+                print(pieces)
+
+                output = pieces.copy()
+                for i in range(len(output)-1):
+                    print(i, output[i])
+                    if output[i][0] == 5:
+                    
+                        output[i] = (9,output[i][1],output[i][2])
+
+                output.insert(0,sc)
+
+                export(output)
+
+
     drawgrid()
     drawtext("export",20,0,(128,128,128))
     pygame.display.update()
