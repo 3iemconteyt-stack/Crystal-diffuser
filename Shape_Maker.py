@@ -121,10 +121,11 @@ screen.fill(fillcolor)
 running = True
 
 if 1==0:
-    tshape = [(0,1,0),(1,0,0),(1,1,1),(9,1,0)]
+    tshape = [(0,1,0),(1,-1,0),(1,0,1),(9,0,0)]
     testdict = {}
     testdict["data"] = []
     testdict["data"].append(tshape)
+    testdict["data"].append([(1,0,0),(9,0,0),(3,1,0),(1,-1,0)])
     dumpsed_data = json.dumps(testdict)
     with open("shapes.json", "w") as f:
         json.dump(testdict, f, indent=3)

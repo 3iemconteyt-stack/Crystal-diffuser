@@ -21,14 +21,22 @@ color2 = (70,70,70)
 fillcolor = (100,100,100)
 my_font = pygame.font.Font("Minecraftia.ttf", 30)
 gemtouched = (0,0,0)
-placing = False
+preview = True
 rotation = 0
 currentshape = [(1,0,0),(9,0,0,),(3,1,0),(1,-1,0)]
-
-with open("shape.txt","r") as f:
-    shapes = f.readlines()
-    print(shapes[0])
-
+shapeindex = 0
+letterorder = "1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r".split(",")
+textcolor = (0,255,255)
+highlight = (255,255,255)
+laserdirection = "stop"
+microlaser = 6
+lossrate = 9
+maxadditionalloss = 15
+losscyclerate = 0.03
+additionalloss = 0
+loss = 1
+#nodes = []
+nodes = [(2,1,(0,0,0)),(1,1,(0,0,0)),(1,0,(0,0,0)),(2,0,(0,0,0)),(3,0,(0,0,0)),(4,0,(0,0,0)),(5,0,(0,0,0))]
 def getcolor(item):
     match item:
         case (0,0,0):
@@ -49,38 +57,40 @@ def getcolor(item):
             color = (0,0,0)
     return color
 
-def drawsquare(x,y):
-        rectangle = pygame.Rect((x*sizex+border*1.25),(y*sizey+border),(sizex),(sizey))
-        if int(y)%2 == 1:
-            if int(x)%2 == 1 :
-                squarecolor = color1
+def drawsquare(x,y,mode):
+        if mode == "grid" or mode == "both":
+            rectangle = pygame.Rect((x*sizex+border*1.25),(y*sizey+border),(sizex),(sizey))
+            if int(y)%2 == 1:
+                if int(x)%2 == 1 :
+                    squarecolor = color1
+                else:
+                    squarecolor = color2
             else:
-                squarecolor = color2
-        else:
-            if int(x)%2 == 1 :
-                squarecolor = color2
-            else:
-                squarecolor = color1
-        pygame.draw.rect(screen,(squarecolor), rectangle)
-        if cords.get((x,y)) != "void":
-            currentcell = cords.get((x,y))
-            drawtriangle(getcolor(currentcell[1]),currentcell[0],x,y)
+                if int(x)%2 == 1 :
+                    squarecolor = color2
+                else:
+                    squarecolor = color1
+            pygame.draw.rect(screen,(squarecolor), rectangle)
+        if mode == "shapes" or mode == "both":
+            if cords.get((x,y)) != "void":
+                currentcell = cords.get((x,y))
+                drawtriangle(getcolor(currentcell[1]),currentcell[0],x,y)
 
-def drawgrid():
+def drawgrid(mode):
     for x in range(10):
         for y in range (8):
-            drawsquare(x,y)
+            drawsquare(x,y,mode)
 
 def drawtriangle(tricolor, rotation, x, y):
     x = x*sizex+border*1.25
     y = y*sizey+border
     match rotation:
         case 1:
-            pygame.draw.polygon(screen,tricolor,( (x+1,y), (x+sizex-1,y) ,(x+sizex-1, y+sizey-1) ))
+            pygame.draw.polygon(screen,tricolor,( (x,y), (x+sizex-1,y) ,(x+sizex-1, y+sizey-1) ))
         case 2:
             pygame.draw.polygon(screen,tricolor,( (x,y), (x+sizex-1,y) ,(x, y+sizey-1) ))
         case 3:
-            pygame.draw.polygon(screen,tricolor,( (x,y+1), (x+sizex-1,y+sizey-1) ,(x, y+sizey-1) ))
+            pygame.draw.polygon(screen,tricolor,( (x,y), (x+sizex-1,y+sizey-1) ,(x, y+sizey-1) ))
         case 4:
             pygame.draw.polygon(screen,tricolor,( (x+sizex-1,y+sizey-1), (x+sizex-1,y) ,(x, y+sizey-1) ))
         case 9:
@@ -96,7 +106,7 @@ def drawshape(shape,x,y,real):
                 cords[(piece[1]+x),(piece[2]+y)] = (piece[0],shapecolor)
 
 def rotateshape(shape,rotation):
-    rotation = rotation-(int(rotation/4))*4
+    rotation = (rotation) % 4
     
     if rotation > 0:
         positive = 1
@@ -124,18 +134,107 @@ def checkshapecolision(shape,x,y):
             legal = False
     return legal
 
+def convertmousecords():
+    global mx , my , mousepos
+    mousex, mousey = pygame.mouse.get_pos()
+    mx = round(((mousex-border*1.25)/sizex)-0.5)
+    my = round(((mousey-border)/sizey)-0.5) 
+    if mx < -1 or mx > 10 or my < -1 or my > 8:
+        mousepos = "out of bound"
+    if mx < 11 and mx > -2 and my < 9 and my > -2:
+        if not (mx == -1 and  my == -1) and not (mx == 10 and my == -1) and not (mx == -1 and my == 8) and not (mx == 10 and my == 8):
+            if not (mx > -1 and my > -1 and mx < 10 and my < 8):
+                mousepos = "extended grid"
+            else:
+                mousepos = "grid"
+        else: 
+            mousepos = "out of bound"
+    if mx < 0 or mx > 9 or my < 0 or my > 7:
+        return False
+    else:
+        return True
+
+def drawletters():
+    for i in range(10):
+        drawtext(letterorder[i],0+i,-1,True)
+        cords[(0+i,-1)] = letterorder[i]
+        drawtext(letterorder[i+26],0+i,8,True)
+        cords[(0+i,8)] = letterorder[i+26]
+    for i in range(8):
+        drawtext(letterorder[i+10],10,0+i,True)
+        cords[(10,0+i)] = letterorder[i+10]
+        drawtext(letterorder[i+18],-1,0+i,True)
+        cords[(-1,0+i)] = letterorder[i+18]
+
+def drawtext(text,x,y,grid):
+    text_surface = my_font.render(text, False, textcolor)
+    text_width, text_height = my_font.size(text)
+    if not grid:
+        screen.blit(text_surface, (x,y))
+    if grid:
+        screen.blit(text_surface,  (int((x*sizex)+(border*1.25)+(sizex/2-text_width/2)) , int((y*sizey)+border)+(sizey/2-text_height/2))) 
+
+def render():
+
+    screen.fill(fillcolor)
+    drawgrid("grid")
+    drawlaser()
+    if convertmousecords():
+        if preview:
+            drawshape(rotateshape(currentshape,rotation),mx,my,False)
+    drawgrid("shapes")
+    convertmousecords()
+    if mousepos == "extended grid":
+        drawtriangle(highlight,9,mx,my)
+    drawletters()
+
+
+
+    pygame.display.update()
+
+def drawlaser():
+    laserwidth = 20
+    colorloss = int(lossrate+additionalloss) * microlaser
+    for x in range(microlaser):
+        for i in range(len(nodes)-1):
+            lasercolor = getcolor(nodes[i][-1])
+            col1, col2, col3 = lasercolor
+            point1 = (int((nodes[i][0]*sizex)+(border*1.25)+sizex/2),int((nodes[i][1]*sizey)+border)+sizey/2)
+            point2 = (int((nodes[i+1][0]*sizex)+(border*1.25)+sizex/2),int((nodes[i+1][1]*sizey)+border)+sizey/2)
+
+            pygame.draw.line(screen, (col1-colorloss, col2-colorloss, col3-colorloss), point1, point2, laserwidth)
+
+            motion = (nodes[i+1][0]-nodes[i][0],nodes[i+1][1]-nodes[i][1])
+            motion2 = (nodes[i][0]-nodes[i-1][0],nodes[i][1]-nodes[i-1][1])
+            if motion != motion2 :
+
+                pygame.draw.circle(screen, (col1-colorloss, col2-colorloss, col3-colorloss),point1, int(laserwidth/2)+10, 0)
+        laserwidth -= 5
+        colorloss -= lossrate
+
+def simulatelaser():
+    global laserdirection
+    nodekey = (nodes[-1][0],nodes[-1][1])
+    if cords[nodekey] in letterorder:
+        laserdirection = "stop"
+    if laserdirection != "stop":
+        if cords[nodekey][0] == 1 or cords[nodekey][0] == 3:
+            laserdirection = [laserdirection[1],laserdirection[0]]
+        elif cords[nodekey][0] == 2 or cords[nodekey][0] == 4:
+            laserdirection = [laserdirection[1]*-1,laserdirection[0]*-1]
+
+        nodes.append((nodekey[0]+laserdirection[0],nodekey[1]+laserdirection[1],nodes[-1][-1]))
+
 cords = {}
-
-
 for x in range (10):
     for y in range (8):
         cords[(x,y)] = "void"
 
-screen.fill(fillcolor)
-pygame.display.update()
-drawgrid()
+with open("shapes.json", "r") as f:
+    shapes = json.load(f)["data"]
+    currentshape = shapes[shapeindex]
 
-
+render()
 running = True
 while running:
     for event in pygame.event.get():
@@ -144,17 +243,50 @@ while running:
         if event.type == pygame.KEYDOWN:
             key = event.key
             if key == pygame.K_SPACE:
-                placing = not placing
+                preview = not preview
+            if key == pygame.K_RIGHT:
+                rotation = (rotation+1) % 4
+                print("+1",rotation)
+            if key == pygame.K_LEFT:
+                rotation = (rotation-1) % 4
+                print("-1",rotation)
+            if key == pygame.K_UP:
+                shapeindex = (shapeindex+1)%len(shapes)
+            if key == pygame.K_DOWN:
+                shapeindex = (shapeindex-1)%len(shapes)
+            currentshape = shapes[shapeindex]
+            
+        if event.type == pygame.MOUSEBUTTONUP:
+            if event.button == 1:
+                if convertmousecords():
+                    drawshape(rotateshape(currentshape,rotation),mx,my,True)
+                convertmousecords()
+                if mousepos == "extended grid":
+                    if cords[(mx,my)] in letterorder[:10]:
+                        laserdirection = [0,1]
+                    if cords[(mx,my)] in letterorder[10:18]:
+                        laserdirection = [-1,0]
+                    if cords[(mx,my)] in letterorder[18:26]:
+                        laserdirection = [1,0]
+                    if cords[(mx,my)] in letterorder[26:36]:
+                        laserdirection = [0,-1]
+                        gemtouched = (0,0,0)
+                    nodes = [(mx,my,gemtouched), (mx+laserdirection[0],my+laserdirection[1],gemtouched)]
+            if event.button == 2:
+                simulatelaser()
 
-    mousex, mousey = pygame.mouse.get_pos()
-    mx = round(((mousex-border*1.25)/sizex)-0.5)
-    my = round(((mousey-border)/sizey)-0.5)
-    if mx < 0 or mx > 9 or my < 0 or my > 7:
-        mx = "out"
-        my = "side"    
-    drawgrid()
-    if isinstance(mx,int):
-        if placing:
-            drawshape(rotateshape(currentshape,rotation),mx,my,False)
-    pygame.display.update()
+
+            if event.button == 4:
+                rotation = (rotation+1) % 4
+            if event.button == 5:
+                rotation = (rotation-1) % 4
+
+
+    render()
+    additionalloss += losscyclerate*loss
+    if additionalloss > maxadditionalloss:
+        loss = loss *-1
+    if additionalloss < 0:
+        loss = loss *-1
+    print(loss)
 pygame.quit()
