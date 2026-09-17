@@ -24,7 +24,7 @@ color2 = (70,70,70)
 fillcolor = (100,100,100)
 pieces = []
 sc = (1,0,0)
-my_font = pygame.font.Font("Minecraftia.ttf", 30)
+my_font = pygame.font.Font("asset/Minecraftia.ttf", 30)
 def getcolor(item):
     match item:
         case (0,0,0):

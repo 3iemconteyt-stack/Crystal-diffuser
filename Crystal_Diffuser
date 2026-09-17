@@ -19,7 +19,7 @@ sizey = (screen_hight-border*2)/8
 color1 = (50,50,50)
 color2 = (70,70,70)
 fillcolor = (100,100,100)
-my_font = pygame.font.Font("Minecraftia.ttf", 30)
+my_font = pygame.font.Font("asset/Minecraftia.ttf", 30)
 gemtouched = (0,0,0)
 preview = True
 rotation = 0
@@ -30,13 +30,16 @@ textcolor = (0,255,255)
 highlight = (255,255,255)
 laserdirection = "stop"
 microlaser = 6
-lossrate = 9
-maxadditionalloss = 15
-losscyclerate = 0.03
+lossrate = 5
+maxadditionalloss = 10
+losscyclerate = 0.01
 additionalloss = 0
 loss = 1
-#nodes = []
-nodes = [(2,1,(0,0,0)),(1,1,(0,0,0)),(1,0,(0,0,0)),(2,0,(0,0,0)),(3,0,(0,0,0)),(4,0,(0,0,0)),(5,0,(0,0,0))]
+nodes = []
+ticks = 0
+placedshapes = []
+erasing = True
+#nodes = [(2,1,(0,0,0)),(1,1,(0,0,0)),(1,0,(0,0,0)),(2,0,(0,0,0)),(3,0,(0,0,0)),(4,0,(0,0,0)),(5,0,(0,0,0))]
 def getcolor(item):
     match item:
         case (0,0,0):
@@ -98,13 +101,18 @@ def drawtriangle(tricolor, rotation, x, y):
             pygame.draw.rect(screen,(tricolor), rectangle)
 
 def drawshape(shape,x,y,real):
+    
     if checkshapecolision(shape,x,y):
+        outshape = []
         shapecolor = shape[0]
         for piece in shape[1:]:
             drawtriangle((getcolor(shapecolor)),piece[0],piece[1]+x,piece[2]+y)
             if real:
                 cords[(piece[1]+x),(piece[2]+y)] = (piece[0],shapecolor)
-
+                outshape.append(((piece[1]+x),(piece[2]+y)))
+        if real:
+            placedshapes.append(outshape)
+                
 def rotateshape(shape,rotation):
     rotation = (rotation) % 4
     
@@ -132,6 +140,9 @@ def checkshapecolision(shape,x,y):
             legal = legal
         else:
             legal = False
+        for i in range(len(placedshapes)):
+            if (piece[1]+x,piece[2]+y) in placedshapes[i]:
+                legal = False
     return legal
 
 def convertmousecords():
@@ -167,6 +178,10 @@ def drawletters():
         cords[(-1,0+i)] = letterorder[i+18]
 
 def drawtext(text,x,y,grid):
+    if nodes != []:
+        textcolor = getcolor(nodes[-1][-1])
+    else:
+        textcolor = (200,200,200)
     text_surface = my_font.render(text, False, textcolor)
     text_width, text_height = my_font.size(text)
     if not grid:
@@ -175,7 +190,7 @@ def drawtext(text,x,y,grid):
         screen.blit(text_surface,  (int((x*sizex)+(border*1.25)+(sizex/2-text_width/2)) , int((y*sizey)+border)+(sizey/2-text_height/2))) 
 
 def render():
-
+    global preview
     screen.fill(fillcolor)
     drawgrid("grid")
     drawlaser()
@@ -187,6 +202,10 @@ def render():
     if mousepos == "extended grid":
         drawtriangle(highlight,9,mx,my)
     drawletters()
+    mousex, mousey = pygame.mouse.get_pos()
+    if erasing:
+        preview = False
+        drawpicture("asset/eraser.png",mousex,mousey,12*4,13*4)
 
 
 
@@ -194,37 +213,57 @@ def render():
 
 def drawlaser():
     laserwidth = 20
-    colorloss = int(lossrate+additionalloss) * microlaser
+    colorloss = int(lossrate+additionalloss) * (microlaser-2)
     for x in range(microlaser):
         for i in range(len(nodes)-1):
             lasercolor = getcolor(nodes[i][-1])
             col1, col2, col3 = lasercolor
+            color = (min(255,max(0,col1-colorloss)), min(255,max(0,col2-colorloss)), min(255,max(0,col3-colorloss)))
             point1 = (int((nodes[i][0]*sizex)+(border*1.25)+sizex/2),int((nodes[i][1]*sizey)+border)+sizey/2)
             point2 = (int((nodes[i+1][0]*sizex)+(border*1.25)+sizex/2),int((nodes[i+1][1]*sizey)+border)+sizey/2)
 
-            pygame.draw.line(screen, (col1-colorloss, col2-colorloss, col3-colorloss), point1, point2, laserwidth)
+            pygame.draw.line(screen, color, point1, point2, laserwidth)
 
             motion = (nodes[i+1][0]-nodes[i][0],nodes[i+1][1]-nodes[i][1])
             motion2 = (nodes[i][0]-nodes[i-1][0],nodes[i][1]-nodes[i-1][1])
             if motion != motion2 :
-
-                pygame.draw.circle(screen, (col1-colorloss, col2-colorloss, col3-colorloss),point1, int(laserwidth/2)+10, 0)
+                pygame.draw.circle(screen, color,point1, int(laserwidth/2)+10, 0)
         laserwidth -= 5
         colorloss -= lossrate
 
 def simulatelaser():
     global laserdirection
     nodekey = (nodes[-1][0],nodes[-1][1])
+    lasercolor = nodes[-1][-1]
     if cords[nodekey] in letterorder:
         laserdirection = "stop"
-    if laserdirection != "stop":
+    if laserdirection != "stop": 
         if cords[nodekey][0] == 1 or cords[nodekey][0] == 3:
             laserdirection = [laserdirection[1],laserdirection[0]]
         elif cords[nodekey][0] == 2 or cords[nodekey][0] == 4:
             laserdirection = [laserdirection[1]*-1,laserdirection[0]*-1]
+        if cords[(nodekey[0]+laserdirection[0],nodekey[1]+laserdirection[1])] != "void":
+            if not (cords[(nodekey[0]+laserdirection[0],nodekey[1]+laserdirection[1])] in letterorder):
+                nextnode = cords[(nodekey[0]+laserdirection[0],nodekey[1]+laserdirection[1])][-1]
+                lasercolor = ( min(nodes[-1][-1][0]+nextnode[0],1) , min(nodes[-1][-1][1]+nextnode[1],1) , min(nodes[-1][-1][2]+nextnode[2],1) )
+        nodes.append((nodekey[0]+laserdirection[0],nodekey[1]+laserdirection[1],lasercolor))
 
-        nodes.append((nodekey[0]+laserdirection[0],nodekey[1]+laserdirection[1],nodes[-1][-1]))
+def drawpicture(picture,x,y,sizex,sizey):
+    str(picture)
+    picture = pygame.image.load(picture)
+    pic = pygame.transform.scale(picture,(sizex,sizey))
+    screen.blit(pic,(x-sizex/2,y-sizey/2))
 
+def erase():
+    if convertmousecords():
+        convertmousecords()
+        if cords[(mx, my)] != "void":
+            for i in range(len(placedshapes)):
+                if (mx,my) in placedshapes[i]:
+                    for piece in placedshapes[i]:
+                        cords[(piece)] = "void"
+                    placedshapes.pop(i)
+                    break
 cords = {}
 for x in range (10):
     for y in range (8):
@@ -244,22 +283,26 @@ while running:
             key = event.key
             if key == pygame.K_SPACE:
                 preview = not preview
+                if preview:
+                    erasing = False
             if key == pygame.K_RIGHT:
                 rotation = (rotation+1) % 4
-                print("+1",rotation)
             if key == pygame.K_LEFT:
                 rotation = (rotation-1) % 4
-                print("-1",rotation)
             if key == pygame.K_UP:
                 shapeindex = (shapeindex+1)%len(shapes)
             if key == pygame.K_DOWN:
                 shapeindex = (shapeindex-1)%len(shapes)
             currentshape = shapes[shapeindex]
-            
+            if key == pygame.K_a:
+                erasing = not erasing
         if event.type == pygame.MOUSEBUTTONUP:
             if event.button == 1:
-                if convertmousecords():
-                    drawshape(rotateshape(currentshape,rotation),mx,my,True)
+                if preview:
+                    if convertmousecords():
+                        drawshape(rotateshape(currentshape,rotation),mx,my,True)
+                if erasing:
+                    erase()
                 convertmousecords()
                 if mousepos == "extended grid":
                     if cords[(mx,my)] in letterorder[:10]:
@@ -272,21 +315,24 @@ while running:
                         laserdirection = [0,-1]
                         gemtouched = (0,0,0)
                     nodes = [(mx,my,gemtouched), (mx+laserdirection[0],my+laserdirection[1],gemtouched)]
+            if event.button == 3:
+                shapeindex  = (shapeindex-1)%len(shapes)
             if event.button == 2:
-                simulatelaser()
-
-
+                shapeindex  = (shapeindex+1)%len(shapes)
+            currentshape = shapes[shapeindex]
             if event.button == 4:
                 rotation = (rotation+1) % 4
             if event.button == 5:
                 rotation = (rotation-1) % 4
 
-
+    ticks += 1
+    if nodes != []:
+        if ticks % 25 == 1:
+            simulatelaser()
     render()
     additionalloss += losscyclerate*loss
     if additionalloss > maxadditionalloss:
         loss = loss *-1
     if additionalloss < 0:
         loss = loss *-1
-    print(loss)
 pygame.quit()
