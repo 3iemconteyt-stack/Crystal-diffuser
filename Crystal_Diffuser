@@ -33,7 +33,7 @@ lossrate = 5
 maxadditionalloss = 10
 losscyclerate = 0.01
 widthloss = 5
-laserwidth = 20
+baselaserwidth = 20
 
 #creates the window
 screen_hight = gamesize
@@ -59,7 +59,10 @@ nodes = []
 ticks = 0
 placedshapes = []
 erasing = False
-
+clicking = False
+gridindex = 0
+gridlist = []
+gridamount = 2
 def getcolor(item):
     #transform a color described in (red,yellow,blue) into (r,g,b)
     match item:
@@ -243,6 +246,7 @@ def render():
     pygame.display.update()
 
 def drawlaser():
+    laserwidth = baselaserwidth
     colorloss = int(lossrate+additionalloss) * (microlaser-2)
     for x in range(microlaser):
         for i in range(len(nodes)-1):
@@ -264,7 +268,7 @@ def drawlaser():
 def simulatelaser():
     global laserdir
     nodekey = (nodes[-1][0],nodes[-1][1])
-    lasercolor = nodes[-1][-1]
+    lasercolor = nodes[-1][-1]  
 
     ccell = cords[nodekey]
     if ccell in letterorder:
@@ -306,16 +310,34 @@ def erase():
                     placedshapes.pop(i)
                     break
 
+def switchgrid(switch):
+    global cords, placedshapes, gridindex, gridlist
+    cords["group"] = placedshapes
+    gridlist[gridindex] = cords
+    gridindex = (gridindex+switch) % len(gridlist)
+    print(gridindex, len(gridlist))
+    cords = gridlist[gridindex]
+    if len(cords) == 0:
+        cords = {}
+        for x in range (10):
+            for y in range (8):
+                cords[(x,y)] = "void"
+        cords["group"] = []
+    placedshapes = cords["group"]
+
+for i in range(gridamount):
+    gridlist.append({})
+
 cords = {}
 for x in range (10):
     for y in range (8):
         cords[(x,y)] = "void"
-
+cords["group"] = []
 with open("shapes.json", "r") as f:
     shapes = json.load(f)["data"]
     currentshape = shapes[shapeindex]
 
-render()
+
 running = True
 while running:
     for event in pygame.event.get():
@@ -339,9 +361,13 @@ while running:
                 shapeindex = (shapeindex+1)%len(shapes)
             if key == pygame.K_DOWN:
                 shapeindex = (shapeindex-1)%len(shapes)
+
             currentshape = shapes[shapeindex]
             if key == pygame.K_a:
                 erasing = not erasing
+            if key == pygame.K_q:
+                switchgrid(1)
+
         if event.type == pygame.MOUSEBUTTONUP:
             if event.button == 1:
                 clicking = False
@@ -359,7 +385,10 @@ while running:
                     if mousecell in letterorder[26:36]:
                         laserdir = [0,-1]
                         gemtouched = (0,0,0)
-                    nodes = [(mx,my,gemtouched), (mx+laserdir[0],my+laserdir[1],gemtouched)]
+                    lcolor = (0,0,0)
+                    if cords[(mx+laserdir[0],my+laserdir[1])] != "void":
+                        lcolor = cords[(mx+laserdir[0],my+laserdir[1])][-1]
+                    nodes = [(mx,my,gemtouched),(mx+laserdir[0],my+laserdir[1],lcolor)]
 
             #changes the current shape
             if event.button == 3:
@@ -373,18 +402,28 @@ while running:
                 rotation = (rotation+1) % 4
             if event.button == 5:
                 rotation = (rotation-1) % 4
+
         if event.type == pygame.MOUSEBUTTONDOWN:
             clicking = True
+
     if erasing and clicking:
         erase()
+    if erasing:
+        pygame.mouse.set_visible(False)
+    else:
+        pygame.mouse.set_visible(True)
     ticks += 1
     if nodes != []:
         if ticks % 25 == 1:
             simulatelaser()
-    render()
+
+
+
     additionalloss += losscyclerate*loss
     if additionalloss > maxadditionalloss:
         loss = loss *-1
     if additionalloss < 0:
         loss = loss *-1
+    render()
+
 pygame.quit()
