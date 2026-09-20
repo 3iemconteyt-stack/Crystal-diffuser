@@ -25,6 +25,10 @@ fillcolor = (100,100,100)
 pieces = []
 sc = (1,0,0)
 my_font = pygame.font.Font("asset/Minecraftia.ttf", 30)
+exportset = "basic"
+
+
+
 def getcolor(item):
     match item:
         case (0,0,0):
@@ -123,21 +127,21 @@ running = True
 if 1==0:
     tshape = [(0,1,0),(1,-1,0),(1,0,1),(9,0,0)]
     testdict = {}
-    testdict["data"] = []
-    testdict["data"].append(tshape)
-    testdict["data"].append([(1,0,0),(9,0,0),(3,1,0),(1,-1,0)])
+    testdict[exportset] = []
+    testdict[exportset].append(tshape)
+    testdict[exportset].append([(1,0,0),(9,0,0),(3,1,0),(1,-1,0)])
     dumpsed_data = json.dumps(testdict)
     with open("shapes.json", "w") as f:
         json.dump(testdict, f, indent=3)
     with open("shapes.json", "r") as f:
-        sfile = json.load(f)["data"]
+        sfile = json.load(f)[exportset]
 
 
 def export(shape):
     with open("shapes.json", "r") as f:
         sfile = json.load(f)
 
-    sfile["data"].append(shape)
+    sfile[exportset].append(shape)
 
     with open("shapes.json", "w") as f:
         json.dump(sfile, f, indent=3)

@@ -11,6 +11,9 @@ pygame.font.init()
 gamesize = 800
 border = 100
 
+
+
+
 #color setting 
 #color1 & color 2 are the colors of the squares of the checkboard pattern
 #fillcolor is the backround color
@@ -28,22 +31,27 @@ highlight = (255,255,255)
 #losscyclerate is the speed at which the laser glimmers
 #widthloss is how big are sublaser
 #laserwidth is how big the original laser is
+#laserspeed is the speed of the laser
 microlaser = 6
 lossrate = 5
 maxadditionalloss = 10
 losscyclerate = 0.01
 widthloss = 5
 baselaserwidth = 20
+laserspeed = 10
 
 #creates the window
+gridx = 10
+gridy = 8
+morph = (gridx/gridy)
 screen_hight = gamesize
-screen_width = screen_hight*1.25
+screen_width = screen_hight*(gridx/gridy)
 screen = pygame.display.set_mode((screen_width, screen_hight))
 pygame.display.set_caption("Crystal Diffuser")
 clock = pygame.time.Clock()
 
 #create and sets variables
-sizex = (screen_width-border*2*1.25)/10
+sizex = (screen_width-border*2*morph)/10
 sizey = (screen_hight-border*2)/8
 my_font = pygame.font.Font("asset/Minecraftia.ttf", 30)
 gemtouched = (0,0,0)
@@ -63,6 +71,7 @@ clicking = False
 gridindex = 0
 gridlist = []
 gridamount = 2
+
 def getcolor(item):
     #transform a color described in (red,yellow,blue) into (r,g,b)
     match item:
@@ -87,7 +96,7 @@ def getcolor(item):
 def drawsquare(x,y,mode):
         #draws the square based on a set of coordinates and includes anything overlaping with said square
         if mode == "grid" or mode == "both":
-            rectangle = pygame.Rect((x*sizex+border*1.25),(y*sizey+border),(sizex),(sizey))
+            rectangle = pygame.Rect((x*sizex+border*morph),(y*sizey+border),(sizex),(sizey))
             if int(y)%2 == 1:
                 if int(x)%2 == 1 :
                     squarecolor = color1
@@ -112,7 +121,7 @@ def drawgrid(mode):
 
 def drawtriangle(color, rotation, x, y):
     #draws a polygon based on state 1-4 triangle and 9 square
-    x = x*sizex+border*1.25
+    x = x*sizex+border*morph
     y = y*sizey+border
     match rotation :
         case 1:
@@ -180,7 +189,7 @@ def convertmousecords():
     #and mousecell to the cell the mouse is currently hovering
     global mx, my, mousepos, mousecell
     mousex, mousey = pygame.mouse.get_pos()
-    mx = round(((mousex-border*1.25)/sizex)-0.5)
+    mx = round(((mousex-border*morph)/sizex)-0.5)
     my = round(((mousey-border)/sizey)-0.5) 
     if mx < -1 or mx > 10 or my < -1 or my > 8:
         mousepos = "out of bound"
@@ -220,7 +229,7 @@ def drawtext(text,x,y,grid):
     if not grid:
         screen.blit(text_surface, (x,y))
     if grid:
-        screen.blit(text_surface,  (int((x*sizex)+(border*1.25)+(sizex/2-text_width/2)) , int((y*sizey)+border)+(sizey/2-text_height/2))) 
+        screen.blit(text_surface,  (int((x*sizex)+(border*morph)+(sizex/2-text_width/2)) , int((y*sizey)+border)+(sizey/2-text_height/2))) 
         cords[(x,y)] = text
 
 def render():
@@ -253,8 +262,8 @@ def drawlaser():
             lasercolor = getcolor(nodes[i][-1])
             col1, col2, col3 = lasercolor
             color = (min(255,max(0,col1-colorloss)), min(255,max(0,col2-colorloss)), min(255,max(0,col3-colorloss)))
-            point1 = (int((nodes[i][0]*sizex)+(border*1.25)+sizex/2),int((nodes[i][1]*sizey)+border)+sizey/2)
-            point2 = (int((nodes[i+1][0]*sizex)+(border*1.25)+sizex/2),int((nodes[i+1][1]*sizey)+border)+sizey/2)
+            point1 = (int((nodes[i][0]*sizex)+(border*morph)+sizex/2),int((nodes[i][1]*sizey)+border)+sizey/2)
+            point2 = (int((nodes[i+1][0]*sizex)+(border*morph)+sizex/2),int((nodes[i+1][1]*sizey)+border)+sizey/2)
 
             pygame.draw.line(screen, color, point1, point2, max(0,laserwidth))
 
@@ -315,12 +324,11 @@ def switchgrid(switch):
     cords["group"] = placedshapes
     gridlist[gridindex] = cords
     gridindex = (gridindex+switch) % len(gridlist)
-    print(gridindex, len(gridlist))
     cords = gridlist[gridindex]
     if len(cords) == 0:
         cords = {}
-        for x in range (10):
-            for y in range (8):
+        for x in range (gridx):
+            for y in range (gridx):
                 cords[(x,y)] = "void"
         cords["group"] = []
     placedshapes = cords["group"]
@@ -329,12 +337,12 @@ for i in range(gridamount):
     gridlist.append({})
 
 cords = {}
-for x in range (10):
-    for y in range (8):
+for x in range (gridx):
+    for y in range (gridy):
         cords[(x,y)] = "void"
 cords["group"] = []
 with open("shapes.json", "r") as f:
-    shapes = json.load(f)["data"]
+    shapes = json.load(f)["basic"]
     currentshape = shapes[shapeindex]
 
 
@@ -366,11 +374,15 @@ while running:
             if key == pygame.K_a:
                 erasing = not erasing
             if key == pygame.K_q:
+                switchgrid(-1)
+            if key == pygame.K_d:
                 switchgrid(1)
+            if key == pygame.K_TAB:
+                erasing = not erasing
 
         if event.type == pygame.MOUSEBUTTONUP:
+            clicking = False
             if event.button == 1:
-                clicking = False
                 if preview:
                     if convertmousecords():
                         drawshape(rotateshape(currentshape,rotation),mx,my,True)
@@ -414,7 +426,7 @@ while running:
         pygame.mouse.set_visible(True)
     ticks += 1
     if nodes != []:
-        if ticks % 25 == 1:
+        if ticks % laserspeed == 1:
             simulatelaser()
 
 
