@@ -15,7 +15,7 @@ if 1==1:
     screen_hight = gamesize
     screen_width = screen_hight*1.25
     screen = pygame.display.set_mode((screen_width, screen_hight))
-    pygame.display.set_caption("Crystal Diffuser")
+    pygame.display.set_caption("Shape Maker")
     clock = pygame.time.Clock()
 sizex = (screen_width-border*2*1.25)/10
 sizey = (screen_hight-border*2)/8
@@ -23,7 +23,7 @@ color1 = (50,50,50)
 color2 = (70,70,70)
 fillcolor = (100,100,100)
 pieces = []
-sc = (1,0,0)
+sc = (1,1,0)
 my_font = pygame.font.Font("asset/Minecraftia.ttf", 30)
 exportset = "basic"
 
@@ -63,7 +63,7 @@ def drawsquare(x,y):
         pygame.draw.rect(screen,(squarecolor), rectangle)
         if cords.get((x,y)) != "void":
             currentcell = cords.get((x,y))
-            drawtriangle(getcolor(currentcell[1]),currentcell[0],x,y)
+            drawtriangle(getcolor(sc),currentcell[0],x,y)
 def drawgrid():
     for x in range(10):
         for y in range (8):
@@ -131,19 +131,19 @@ if 1==0:
     testdict[exportset].append(tshape)
     testdict[exportset].append([(1,0,0),(9,0,0),(3,1,0),(1,-1,0)])
     dumpsed_data = json.dumps(testdict)
-    with open("shapes.json", "w") as f:
+    with open("asset/shapes.json", "w") as f:
         json.dump(testdict, f, indent=3)
-    with open("shapes.json", "r") as f:
+    with open("asset/shapes.json", "r") as f:
         sfile = json.load(f)[exportset]
 
 
 def export(shape):
-    with open("shapes.json", "r") as f:
+    with open("asset/shapes.json", "r") as f:
         sfile = json.load(f)
 
     sfile[exportset].append(shape)
 
-    with open("shapes.json", "w") as f:
+    with open("asset/shapes.json", "w") as f:
         json.dump(sfile, f, indent=3)
 
 while running:
@@ -186,14 +186,8 @@ while running:
                         else:
                             cords[(mx,my)] = cell
                             pieces[index] = (cell[0],mx-origin_point[0],my-origin_point[1])
+
             if checkmousecolision(20,0,export_width,export_hight):
-                #with open("shape.txt","a") as f:
-                    #f.write("\n"+((str(pieces)).replace("5","9").replace(" ","")))
-                
-
-
-                print(pieces)
-
                 output = pieces.copy()
                 for i in range(len(output)-1):
                     print(i, output[i])
