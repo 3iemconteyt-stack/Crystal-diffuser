@@ -1,6 +1,7 @@
 import pygame
 import math
 import json
+import pygame.freetype
 pygame.init()
 pygame.font.init()
 
@@ -48,15 +49,17 @@ laserspeed = 6
 basecirclesize = 10
 
 #notes settings
-cirpos = (1050, 700)
+bcirposx, bcirposy = 100, 650
 csize = 30
 crotation = 210
+bnotex, notey = 200, 50
 
 #create and sets variables
 ratiox = 75
 sizex = int((screen_width-border*2*morph)/gridx)
 sizey = int((screen_hight-border*2)/gridy)
-my_font = pygame.font.Font("asset/Minecraftia.ttf", int(sizex/1.875))
+#my_font = pygame.font.Font("asset/Minecraftia.ttf", int(sizex/1.875))
+font = pygame.freetype.Font("asset/Minecraftia.ttf",30)
 gemtouched = (0,0,0)
 preview = True
 rotation = 0
@@ -77,7 +80,7 @@ gridamount = 2
 shownotes = False
 shouldredraw = False
 laserorigin = ()
-
+notes = [("a","1",(0,1,0)),("a","1",(0,1,0)),("a","1",(0,1,0))]
 def getcolor(item):
     #transform a color described in (red,yellow,blue) into (r,g,b)
     print
@@ -223,24 +226,33 @@ def checkcursor():
         return True
 
 def drawletters():
+    global my_font
+    my_font = pygame.font.Font("asset/Minecraftia.ttf", int(sizex/1.875))
     for i in range(gridx):
-        drawtext(numberorder[i],0+i,-1,True)
-        drawtext(letterorder[i+gridy],0+i,gridy,True)
+        drawtext(numberorder[i],0+i,-1,True,0,0)
+        drawtext(letterorder[i+gridy],0+i,gridy,True,0,0)
     for i in range(gridy):
-        drawtext(numberorder[i+gridx],gridx,0+i,True)
-        drawtext(letterorder[i],-1,0+i,True)
+        drawtext(numberorder[i+gridx],gridx,0+i,True,0,0)
+        drawtext(letterorder[i],-1,0+i,True,0,0)
 
-def drawtext(text,x,y,grid):
+def drawtext(text,x,y,grid,color,size):
     if nodes != []:
-        textcolor = getcolor(nodes[-1][-1])
+        color = getcolor(nodes[-1][-1])
     else:
-        textcolor = (200,200,200)
-    text_surface = my_font.render(text, False, textcolor)
-    text_width, text_height = my_font.size(text)
+        color = (200,200,200)
+    if not color == 0:
+        color = color
+    if size == 0:
+        size = int(sizex/1.875)
+    #text_surface = my_font.render(text, False, textcolor)
+
     if not grid:
-        screen.blit(text_surface, (x,y))
+        #screen.blit(text_surface, (x,y))
+        font.render_to(screen, (x, y), text, color, size= size, bgcolor= (0,0,0,0))
     if grid:
-        screen.blit(text_surface,  (int((x*sizex)+(border*morph)+(sizex/2-text_width/2)) , int((y*sizey)+border)+(sizey/2-text_height/2))) 
+        text_width, text_height = my_font.size(text)
+        #screen.blit(text_surface,  (int((x*sizex)+(border*morph)+(sizex/2-text_width/2)) , int((y*sizey)+border)+(sizey/2-text_height/2))) 
+        font.render_to(screen, (int((x*sizex)+(border*morph)+(sizex/2-text_width/2)) , int((y*sizey)+border)+(sizey/2-text_height/2)), text, color, size=size)
         cords[(x,y)] = text
 
 def drawlaser():
@@ -277,7 +289,10 @@ def simulatelaser():
 
     ccell = cords[nodekey]
     if ccell in letterorder or ccell in numberorder:
+        #if laserdir != "stop":
+            #notes.append((cords[(laserorigin[0][0],laserorigin[0][1])], ccell, lasercolor))
         laserdir = "stop"
+        
     if laserdir != "stop": 
         #handle laser and edge colision
         if ccell[0] == 1 or ccell[0] == 3:
@@ -317,9 +332,10 @@ def erase():
                     break
 
 def switchgrid(switch):
-    global cords, placedshapes, gridindex, gridlist, nodes
+    global cords, placedshapes, gridindex, gridlist, nodes, notes
     cords["group"] = placedshapes
     cords["nodes"] = nodes
+    cords["notes"] = notes
     gridlist[gridindex] = cords
     gridindex = (gridindex+switch) % len(gridlist)
     cords = gridlist[gridindex]
@@ -330,13 +346,17 @@ def switchgrid(switch):
                 cords[(x,y)] = "void"
         cords["group"] = []
         cords["nodes"] = []
+        cords["notes"] = []
     placedshapes = cords["group"]
     nodes = cords["nodes"]
+    notes = cords["notes"]
 
 def drawcircles():
+    cirposx = (bcirposx+(sizex*gridx)+border*2)
+    cirposy = bcirposy
     for i in range(6):
-        pygame.draw.circle(screen, (0,0,0), (cirpos[0]+sin(i*60+crotation)*csize*2.2, cirpos[1]+cos(i*60+crotation)*csize*2.2), csize)
-        pygame.draw.circle(screen, getcolor(i+1), (cirpos[0]+sin(i*60+crotation)*csize*2.2, cirpos[1]+cos(i*60+crotation)*csize*2.2), csize-7)
+        pygame.draw.circle(screen, (0,0,0), (cirposx    +(sin(i*60+crotation)*csize*2.2), cirposy   +(cos(i*60+crotation)*csize*2.2)), csize)
+        pygame.draw.circle(screen, getcolor(i+1), (cirposx  +(sin(i*60+crotation)*csize*2.2), cirposy   +(cos(i*60+crotation)*csize*2.2)), csize-7)
 
 def sin(angle):
     return math.sin(math.radians(angle))
@@ -351,10 +371,34 @@ def per(a,b,mode):
         return a*(100-b)/100
 
 def drawhints():
-    rectangle = pygame.Rect((1150),(50),(200),(700))
-    pygame.draw.rect(screen,(120,120,120), rectangle)
+    notex = bnotex+(sizex*gridx)+border*2
+    rectangle = pygame.Rect((notex),(notey),(300),(700))
+    pygame.draw.rect(screen,(150,150,150), rectangle,0,20)
+    rectangle = pygame.Rect((notex),(notey),(300),(50))
+    pygame.draw.rect(screen,(120,120,120), rectangle,0,4)
+    rectangle = pygame.Rect((notex),(notey),(300),(700))
+    pygame.draw.rect(screen,(70,70,70), rectangle,5,20,4,4)
 
 
+ 
+    
+    text_width, text_height = get_textsize("notes", 30)
+
+ 
+    drawtext("Notes",notex-text_width/2+150,60,False,0,30)
+
+    for i in range(len(notes)):
+        text_width, text_height = get_textsize("["+notes[i][0]+","+notes[i][1]+"]", 25)
+        
+        drawtext("["+notes[i][0]+","+notes[i][1]+"]" ,notex+20 ,notey+50+i*30 ,False,0,25)
+
+        pygame.draw.circle(screen, (0,0,0), ((notex+20+text_width), notey+50+(i*30)+(text_height/2)), 12)
+        pygame.draw.circle(screen, getcolor(notes[i][2]), ((notex+20+text_width), notey+50+(i*30)+(text_height/2)), 12-3)
+        print((screen, notes[i][2], ((notex+20+text_width), (notex+20+text_width)), 25-7))
+
+def get_textsize(text, size):
+    textSurface = font.render(str(text), size= size)[0].convert_alpha()
+    return textSurface.get_size()
 
 def render():
     global preview, gridindex
@@ -372,8 +416,8 @@ def render():
     if erasing:
         preview = False
         drawpicture("asset/eraser.png",mousex,mousey,12*4,13*4)
-    if gridindex == 1:
-        drawcircles()
+    #if gridindex == 1:
+    drawcircles()
     drawhints()
     pygame.display.update()
 
@@ -389,7 +433,7 @@ for x in range(gridx):
 
 cords["group"] = []
 cords["nodes"] = []
-
+cords["notes"] = []
 with open("asset/shapes.json", "r") as f:
     shapes = json.load(f)["basic"]
     currentshape = shapes[shapeindex]
@@ -511,5 +555,12 @@ while running:
 
     additionalloss = sin(ticks/losscyclerate)*maxadditionalloss+maxadditionalloss
     render()
+
+
+
+
+
+
+
 
 pygame.quit()
