@@ -49,10 +49,13 @@ laserspeed = 6
 basecirclesize = 10
 
 #notes settings
-bcirposx, bcirposy = 100, 650
+bcirposx, bcirposy = 100, 200
 csize = 30
 crotation = 210
-bnotex, notey = 200, 50
+bnotex, notey = 250, 50
+nx ,ny = 0, 400
+nw ,nh = 200 , 300
+
 
 #create and sets variables
 ratiox = 75
@@ -68,7 +71,7 @@ shapeindex = 0
 numberorder = []
 for i in range(100):
     numberorder.append(str(i+1))
-letterorder = "a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,!,?,&,#,$,/,:,<,>,A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U,V,W,X,Y,Z*".split(",")
+letterorder = "a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,!,?,&,#,$,/,:,<,>,*,A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U,V,W,X,Y,Z".split(",")
 ldirection = "stop"
 additionalloss = 0
 Mnodes = []
@@ -84,9 +87,17 @@ shouldredraw = False
 lorigin = ()
 notes = [("a","1",(0,1,0)),("a","1",(0,1,0)),("a","1",(0,1,0))]
 notes = []
+selectedcolor = 0
+noting = False
+nx = nx+(sizex*gridx)+border*2
+cirposy = ny + bcirposy
+cirposx = nx + nw/2
+note1 ,note2 = "a","11"
+notex = bnotex+(sizex*gridx)+border*2
+selectednote = False
+mousevisible = True
 def getcolor(item):
     #transform a color described in (red,yellow,blue) into (r,g,b)
-    print
     match item:
         case (0,0,0)|0:
             color = (255,255,255)
@@ -95,7 +106,7 @@ def getcolor(item):
         case (0,1,0)|3:
             color = (255,255,0)
         case (1,1,0)|2:
-            color = (255,128,0)            
+            color = (255,128,0)
         case (0,0,1)|5:
             color = (0,80,255)
         case (1,0,1)|6:
@@ -163,7 +174,7 @@ def drawshape(shape,x,y,real):
         if real:
             shouldredraw = True
             placedshapes.append(outshape)
-                
+
 def rotateshape(shape,rotation):
     #rotates a shape by rotation*90 degrees
     rotation = (rotation) % 4
@@ -202,11 +213,10 @@ def checkcursor():
     #returns if the mouse is inside the main grid and set mx and my to the mouse coordinate on the grid
     #mousepos to mouseposition (inside the grid, hovering letters or out of bound)
     #and mousecell to the cell the mouse is currently hovering
-    #try:
     global mx, my, mousepos, mousecell
     mousex, mousey = pygame.mouse.get_pos()
     mx = round(((mousex-border*morph)/sizex)-0.5)
-    my = round(((mousey-border)/sizey)-0.5) 
+    my = round(((mousey-border)/sizey)-0.5)
 
     cx = mx
     cy = my
@@ -228,11 +238,6 @@ def checkcursor():
         return False
     else:
         return True
-    #except:
-        print(cords)
-        print(mousex, mousey)
-        print(cx , cy)
-        print("this means it crashes")
 
 def drawletters():
     for i in range(gridx):
@@ -390,11 +395,16 @@ def switchgrid(switch):
     notes = cords["notes"]
 
 def drawcircles():
-    cirposx = (bcirposx+(sizex*gridx)+border*2)
-    cirposy = bcirposy
+    rectangle = pygame.Rect((nx),(ny),nw,nh)
+    pygame.draw.rect(screen,(150,150,150), rectangle,0,20)
+    pygame.draw.circle(screen, (0,0,0), (cirposx,cirposy), csize)
+
+
+    pygame.draw.circle(screen, (255,255,255), (cirposx,cirposy), csize-7)
+    
     for i in range(6):
-        pygame.draw.circle(screen, (0,0,0), (cirposx    +(sin(i*60+crotation)*csize*2.2), cirposy   +(cos(i*60+crotation)*csize*2.2)), csize)
-        pygame.draw.circle(screen, getcolor(i+1), (cirposx  +(sin(i*60+crotation)*csize*2.2), cirposy   +(cos(i*60+crotation)*csize*2.2)), csize-7)
+        pygame.draw.circle(screen, (0,0,0), (cirposx+(sin(i*60+crotation)*csize*2.2),cirposy+(cos(i*60+crotation)*csize*2.2)), csize)
+        pygame.draw.circle(screen, getcolor(i+1), (cirposx+(sin(i*60+crotation)*csize*2.2),cirposy+(cos(i*60+crotation)*csize*2.2)), csize-7)  
 
 def sin(angle):
     return math.sin(math.radians(angle))
@@ -411,7 +421,7 @@ def per(a,b,mode):
 def distance(point1, point2):
     x1, y1 = point1
     x2, y2 = point2
-    return ((x1-x2)^2+(y1-y2)^2)^0.5
+    return ((x1-x2)**2+(y1-y2)**2)**0.5
 
 def get_textsize(text, size):
     textSurface = font.render(str(text), size= size)[0].convert_alpha()
@@ -425,38 +435,52 @@ def drawhints():
     pygame.draw.rect(screen,(120,120,120), rectangle,0,4)
     rectangle = pygame.Rect((notex),(notey),(300),(700))
     pygame.draw.rect(screen,(70,70,70), rectangle,5,20,4,4)
-
-
- 
-    
     text_width, text_height = get_textsize("notes", 30)
-
- 
     drawtext("Notes",notex-text_width/2+150,60,False,0,30)
+    if gridindex == 0:
+        drawtext("Notes",notex-text_width/2+150,60,False,0,30)
+    else:
+        #drawtext("Notes",notex-text_width/2+150,60,False,getcolor(selectedcolor),30)
+        text_width, text_height = get_textsize("+", 45)
+        pygame.draw.circle(screen, (200,200,200), (notex+250+text_width/2,75+2.5), 20)
+        drawtext("+",notex+250,75-text_height/2+2.5,False,(255,255,255),45)
+    if noting:
+        text_width, text_height = get_textsize("["+note1+","+note2+"]", 35)
+        cp1 = (nx+nw/2-text_width/2) +get_textsize("["+note1,35)[0]-get_textsize(note1,35)[0]/2
+        cp2 = (nx+nw/2-text_width/2) +get_textsize("["+note1+","+note2,35)[0]-get_textsize(note2,35)[0]/2
+        pygame.draw.circle(screen, (200,200,200), (cp1,ny+30), 15)
+        pygame.draw.circle(screen, (200,200,200), (cp2,ny+30), 15)
+        drawtext("["+note1+","+note2+"]" ,nx+nw/2-text_width/2 ,ny+50 ,False,getcolor(selectedcolor),35)
+
+        rectangle = pygame.Rect((nx+nw-40),(ny),(80),(50))
+        pygame.draw.rect(screen,(150,150,150), rectangle,0,20)
+
+        pygame.draw.circle(screen, (100,100,100), (nx+nw+15,ny+25),20)
+        text_width, text_height = get_textsize("+", 45)
+        drawtext("+",nx+nw+15-text_width/2,ny+25-text_height/2,False,(255,255,255),45)
 
     for i in range(len(notes)):
         tcolor = (255,100,100)
         snote = simulatelaser(notes[i][0])
+        print(simulatelaser(notes[i][0]),notes[i])
+        
         if (notes[i][0],snote[0],snote[1]) == notes[i]:
             tcolor = (0,255,100)
         
         text_width, text_height = get_textsize("["+notes[i][0]+","+notes[i][1]+"]", 25)
-        
         drawtext("["+notes[i][0]+","+notes[i][1]+"]" ,notex+20 ,notey+70+i*30 ,False,tcolor,25)
-
         pygame.draw.circle(screen, tcolor, ((notex+20+text_width+12), notey+70+(i*30)+(text_height/2)), 12)
         pygame.draw.circle(screen, getcolor(notes[i][2]), ((notex+20+text_width+12), notey+70+(i*30)+(text_height/2)), 12-3)
- 
-
-
+    
 def render():
     global preview, gridindex
     screen.fill(fillcolor)
     drawgrid("grid")
     drawlaser()
     checkcursor()
-    if preview and checkcursor:
-        drawshape(rotateshape(currentshape,rotation),mx,my,False)
+    if not noting:
+        if preview and checkcursor:
+            drawshape(rotateshape(currentshape,rotation),mx,my,False)
     drawgrid("shapes")
     if mousepos == "extended grid":
         drawtriangle(highlight,9,mx,my)
@@ -464,11 +488,20 @@ def render():
     mousex, mousey = pygame.mouse.get_pos()
 
     #if gridindex == 1:
-    drawcircles()
+    if noting:
+        drawcircles()
     drawhints()
-    if erasing:
+    if erasing and not noting:
         preview = False
         drawpicture("asset/eraser.png",mousex,mousey,12*4,13*4)
+    if selectednote != False:
+        text_width, text_height = get_textsize("["+note1+","+note2+"]", 35)
+        cp1 = (nx+nw/2-text_width/2) +get_textsize("["+note1,35)[0]-get_textsize(note1,35)[0]/2
+        cp2 = (nx+nw/2-text_width/2) +get_textsize("["+note1+","+note2,35)[0]-get_textsize(note2,35)[0]/2   
+        if selectednote == 1:
+            pygame.draw.line(screen, (170,170,170), (mousex,mousey), (cp1,ny+30), 2)
+        if selectednote == 2:
+            pygame.draw.line(screen, (170,170,170), (mousex,mousey), (cp2,ny+30), 2)     
     pygame.display.update()
 
 
@@ -533,55 +566,100 @@ while running:
             if key == pygame.K_m:
                 no = True
         if event.type == pygame.MOUSEBUTTONUP:
+            checkcursor()
+            mousex, mousey = pygame.mouse.get_pos()
             clicking = False
+            if mousepos == "extended grid":
+                if selectednote == 1:
+                    if note2 != cords[mx,my]:
+                        note1 = cords[mx,my]
+                if selectednote == 2:
+                    if note1 != cords[mx,my]:
+                        note2 = cords[mx,my]                    
+            selectednote = False
             if event.button == 1:
-                if preview:
-                    if checkcursor():
-                        drawshape(rotateshape(currentshape,rotation),mx,my,True)
-                checkcursor()
-                if mousepos == "extended grid":
-                    if mousecell in numberorder[:gridx]:
-                        ldirection = [0,1]
-                    if mousecell in numberorder[gridx:gridx+gridy]:
-                        ldirection = [-1,0]
-                    if mousecell in letterorder[:gridy]:
-                        ldirection = [1,0]
-                    if mousecell in letterorder[gridy:gridx+gridy]:
-                        ldirection = [0,-1]
-                    gemtouched = (0,0,0)
-                    lcolor = (0,0,0)
-                    nextcell = (mx+ldirection[0],my+ldirection[1])
-                    if cords[nextcell] != "void":
-                        lcolor = cords[nextcell][-1]
-                    lorigin = ((mx,my,gemtouched),ldirection)
-                    Mnodes = [(mx,my,gemtouched),(mx+ldirection[0],my+ldirection[1],lcolor)]
+                if not noting:
+                    if preview:
+                        if checkcursor():
+                            drawshape(rotateshape(currentshape,rotation),mx,my,True)
+                    if mousepos == "extended grid":
+                        if mousecell in numberorder[:gridx]:
+                            ldirection = [0,1]
+                        if mousecell in numberorder[gridx:gridx+gridy]:
+                            ldirection = [-1,0]
+                        if mousecell in letterorder[:gridy]:
+                            ldirection = [1,0]
+                        if mousecell in letterorder[gridy:gridx+gridy]:
+                            ldirection = [0,-1]
+                        gemtouched = (0,0,0)
+                        lcolor = (0,0,0)
+                        nextcell = (mx+ldirection[0],my+ldirection[1])
+                        if cords[nextcell] != "void":
+                            lcolor = cords[nextcell][-1]
+                        lorigin = ((mx,my,gemtouched),ldirection)
+                        Mnodes = [(mx,my,gemtouched),(mx+ldirection[0],my+ldirection[1],lcolor)]
+                if noting:
+                    for i in range(6):
+                        if distance((cirposx+(sin(i*60+crotation)*csize*2.2),cirposy+(cos(i*60+crotation)*csize*2.2)),(mousex,mousey)) <= csize:
+                            if selectedcolor == i+1:
+                                selectedcolor = 7
+                            else:
+                                selectedcolor = i+1
+                    if distance((cirposx,cirposy),(mousex,mousey)) <= csize:
+                        if selectedcolor == 0:
+                            selectedcolor = 7
+                        else:
+                            selectedcolor = 0 
+                    if distance((nx+nw+15,ny+25),(mousex,mousey))<=20:
+                        notes.append((note1,note2,selectedcolor))
+                        noting = False
+                text_width, text_height = get_textsize("+", 45)
+
+                if gridindex != 0:
+                    if distance((notex+250+text_width/2,75+2.5),(mousex,mousey)) <= 45:
+                        noting = not noting
+                        if noting:
+                            erasing = False
+
 
             #changes the current shape
-            if event.button == 3:
-                shapeindex  = (shapeindex-1)%len(shapes)
-            if event.button == 2:
-                shapeindex  = (shapeindex+1)%len(shapes)
-            currentshape = shapes[shapeindex]
-
-            #rotates the current shape
-            if event.button == 4:
-                rotation = (rotation+1) % 4
-            if event.button == 5:
-                rotation = (rotation-1) % 4
+            if not noting:
+                if event.button == 3:
+                    shapeindex  = (shapeindex-1)%len(shapes)
+                if event.button == 2:
+                    shapeindex  = (shapeindex+1)%len(shapes)
+                currentshape = shapes[shapeindex]
+                #rotates the current shape
+                if event.button == 4:
+                    rotation = (rotation+1) % 4
+                if event.button == 5:
+                    rotation = (rotation-1) % 4
         if event.type == pygame.MOUSEBUTTONDOWN:
             clicking = True
-
+            mousex, mousey = pygame.mouse.get_pos()
+            if noting:
+                text_width, text_height = get_textsize("["+note1+","+note2+"]", 35)
+                cp1 = (nx+nw/2-text_width/2) +get_textsize("["+note1,35)[0]-get_textsize(note1,35)[0]/2
+                cp2 = (nx+nw/2-text_width/2) +get_textsize("["+note1+","+note2,35)[0]-get_textsize(note2,35)[0]/2   
+                if distance((cp1,ny+30),(mousex,mousey)) <= 15:
+                    selectednote = 1
+                if distance((cp2,ny+30),(mousex,mousey)) <= 15:
+                    selectednote = 2
+    mousevisible = True
     if erasing and clicking:
         erase()
     if erasing:
-        pygame.mouse.set_visible(False)
-    else:
+        mousevisible = False
+    if selectednote != False:
+        mousevisible = False
+    if mousevisible:
         pygame.mouse.set_visible(True)
+    else:
+        pygame.mouse.set_visible(False)
     ticks += 1
     if Mnodes != []:
         if ticks % laserspeed == 1:
             simulatelaser(True)
-
     if shouldredraw :
         if len(Mnodes) != 0:
             pastnodes = Mnodes
@@ -599,16 +677,9 @@ while running:
                 if ldirection == "stop":
                     break
             simulatelaser(True)
-
-            
-
+    if gridindex == 0:
+        selectednote = False
+        noting = False
     additionalloss = sin(ticks/losscyclerate)*maxadditionalloss+maxadditionalloss
     render()
-
-
-
-
-
-
-
 pygame.quit()
