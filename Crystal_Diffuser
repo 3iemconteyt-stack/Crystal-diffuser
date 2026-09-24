@@ -462,7 +462,6 @@ def drawhints():
     for i in range(len(notes)):
         tcolor = (255,100,100)
         snote = simulatelaser(notes[i][0])
-        print(simulatelaser(notes[i][0]),notes[i])
         
         if (notes[i][0],snote[0],snote[1]) == notes[i]:
             tcolor = (0,255,100)
@@ -611,7 +610,24 @@ while running:
                         else:
                             selectedcolor = 0 
                     if distance((nx+nw+15,ny+25),(mousex,mousey))<=20:
-                        notes.append((note1,note2,selectedcolor))
+                        match getcolor(selectedcolor):
+                            case (255,255,255):
+                                ncolor = (0,0,0)
+                            case (255,30,30):
+                                ncolor = (1,0,0)
+                            case (255,255,0):
+                                ncolor = (0,1,0)
+                            case (255,128,0):
+                                ncolor = (1,1,0)
+                            case (0,80,255):
+                                ncolor = (0,0,1)
+                            case (150,0,255):
+                                ncolor = (1,0,1)
+                            case (0,255,0):
+                                ncolor = (0,1,1)
+                            case (0,0,0):
+                                ncolor = (1,1,1)
+                        notes.append((note1,note2,ncolor))
                         noting = False
                 text_width, text_height = get_textsize("+", 45)
 
