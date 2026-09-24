@@ -69,7 +69,7 @@ numberorder = []
 for i in range(100):
     numberorder.append(str(i+1))
 letterorder = "a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,!,?,&,#,$,/,:,<,>,A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U,V,W,X,Y,Z*".split(",")
-laserdir = "stop"
+ldirection = "stop"
 additionalloss = 0
 Mnodes = []
 ticks = 0
@@ -202,38 +202,39 @@ def checkcursor():
     #returns if the mouse is inside the main grid and set mx and my to the mouse coordinate on the grid
     #mousepos to mouseposition (inside the grid, hovering letters or out of bound)
     #and mousecell to the cell the mouse is currently hovering
-    try:
-        global mx, my, mousepos, mousecell
-        mousex, mousey = pygame.mouse.get_pos()
-        mx = round(((mousex-border*morph)/sizex)-0.5)
-        my = round(((mousey-border)/sizey)-0.5) 
+    #try:
+    global mx, my, mousepos, mousecell
+    mousex, mousey = pygame.mouse.get_pos()
+    mx = round(((mousex-border*morph)/sizex)-0.5)
+    my = round(((mousey-border)/sizey)-0.5) 
 
-        cx = mx
-        cy = my
-        if cx < -1 or cx > gridx or cy < -1 or cy > gridy:
+    cx = mx
+    cy = my
+    if cx < -1 or cx > gridx or cy < -1 or cy > gridy:
+        mousepos = "out of bound"
+    elif cx < gridx+1 and cx > -2 and cy < gridy+1 and cy > -2:
+        if not (cx == -1 and  cy == -1) and not (cx == gridx and cy == -1) and not (cx == -1 and cy == gridy) and not (cx == gridx and cy == gridy):
+            if not (cx > -1 and cy > -1 and cx < gridx and cy < gridy):
+                mousepos = "extended grid"
+            else:
+                mousepos = "grid"
+        else: 
             mousepos = "out of bound"
-        if cx < gridx+1 and cx > -2 and cy < gridy+1 and cy > -2:
-            if not (cx == -1 and  cy == -1) and not (cx == gridx and cy == -1) and not (cx == -1 and cy == gridy) and not (cx == gridx and cy == gridy):
-                if not (cx > -1 and cy > -1 and cx < gridx and cy < gridy):
-                    mousepos = "extended grid"
-                else:
-                    mousepos = "grid"
-            else: 
-                mousepos = "out of bound"
 
-        if mousepos != "out of bound":
-            mousecell = cords[(cx,cy)]
+    if mousepos != "out of bound":
+        mousecell = cords.get((cx,cy))
 
-        if cx < 0 or cx > gridx-1 or cy < 0 or cy > gridy-1:
-            return False
-        else:
-            return True
-    except:
+    if cx < 0 or cx > gridx-1 or cy < 0 or cy > gridy-1:
+        return False
+    else:
+        return True
+    #except:
+        print(cords)
+        print(mousex, mousey)
+        print(cx , cy)
         print("this means it crashes")
 
 def drawletters():
-    global my_font
-    my_font = pygame.font.Font("asset/Minecraftia.ttf", int(sizex/1.875))
     for i in range(gridx):
         drawtext(numberorder[i],0+i,-1,True,0,0)
         drawtext(letterorder[i+gridy],0+i,gridy,True,0,0)
@@ -256,6 +257,7 @@ def drawtext(text,x,y,grid,color,size):
         text_width, text_height = get_textsize(text, size)
         font.render_to(screen, (int((x*sizex)+(border*morph)+(sizex/2)-(text_width/2)) , int((y*sizey)+border)+(sizey/2-text_height/2)), text, color, size=size)
         cords[(x,y)] = text
+        cords[text] = (x,y)
 
 def drawlaser():
     global additionalloss
@@ -287,38 +289,65 @@ def drawlaser():
         c_loss -= lossrate
 
 def simulatelaser(main):
-    global laserdir, Mnodes
-    if main:
+    global ldirection, Mnodes, lorigin, cords
+    laserorigin = lorigin
+    if main == True:
         nodes = Mnodes.copy()
-    nodekey = (nodes[-1][0],nodes[-1][1])
-    l_color = nodes[-1][-1]  
-    ccell = cords[nodekey]
-    if ccell in letterorder or ccell in numberorder:
-        if laserdir != "stop":
-            if gridindex == 0:
-                if not ((cords[(lorigin[0][0],lorigin[0][1])], ccell, l_color) in notes or (ccell,cords[(lorigin[0][0],lorigin[0][1])] , l_color) in notes):
-                    notes.append((cords[(lorigin[0][0],lorigin[0][1])], ccell, l_color))
-        laserdir = "stop"
-        
-    if laserdir != "stop": 
-        #handle laser and edge colision
-        if ccell[0] == 1 or ccell[0] == 3:
-            laserdir = [laserdir[1],laserdir[0]]
-        elif ccell[0] == 2 or ccell[0] == 4:
-            laserdir = [laserdir[1]*-1,laserdir[0]*-1]
+        laserdir = ldirection
+    else:
+        lcell = cords[main]
+        if main in numberorder[:gridx]:
+            laserdir = [0,1]
+        if main in numberorder[gridx:gridx+gridy]:
+            laserdir = [-1,0]
+        if main in letterorder[:gridy]:
+            laserdir = [1,0]
+        if main in letterorder[gridy:gridx+gridy]:
+            laserdir = [0,-1]
+        gemtouched = (0,0,0)
+        l_color = (0,0,0)
+        nextcell = (lcell[0]+laserdir[0],lcell[1]+laserdir[1])
+        if cords[nextcell] != "void":
+            l_color = cords[nextcell][-1]
+        laserorigin = ((lcell[0],lcell[1],gemtouched),laserdir)
+        nodes = [(lcell[0],lcell[1],gemtouched),(lcell[0]+laserdir[0],lcell[1]+laserdir[1],l_color)]
+                   
+    while laserdir != "stop":
+    #if True:
+        nodekey = (nodes[-1][0],nodes[-1][1])
+        l_color = nodes[-1][-1]  
+        ccell = cords[nodekey]
+        if ccell in letterorder or ccell in numberorder:
+            if laserdir != "stop":
+                if gridindex == 0:
+                    if main == True:
+                        if not ((cords[(laserorigin[0][0],laserorigin[0][1])], ccell, l_color) in notes or (ccell,cords[(laserorigin[0][0],laserorigin[0][1])] , l_color) in notes):
+                            notes.append((cords[(laserorigin[0][0],laserorigin[0][1])], ccell, l_color))
+            laserdir = "stop"
+            
+        if laserdir != "stop": 
+            #handle laser and edge colision
+            if ccell[0] == 1 or ccell[0] == 3:
+                laserdir = [laserdir[1],laserdir[0]]
+            elif ccell[0] == 2 or ccell[0] == 4:
+                laserdir = [laserdir[1]*-1,laserdir[0]*-1]
 
-        #preshots color change
-        nextcell = cords[(nodekey[0]+laserdir[0],nodekey[1]+laserdir[1])] 
+            #preshots color change
+            nextcell = cords[(nodekey[0]+laserdir[0],nodekey[1]+laserdir[1])] 
 
-        if nextcell != "void":
-            if not (nextcell in letterorder or nextcell in numberorder):
-                nextnode = nextcell[-1]
-                #adds two color tuples together
-                l_color = ( min(nodes[-1][-1][0]+nextnode[0],1) , min(nodes[-1][-1][1]+nextnode[1],1) , min(nodes[-1][-1][2]+nextnode[2],1) )
+            if nextcell != "void":
+                if not (nextcell in letterorder or nextcell in numberorder):
+                    nextnode = nextcell[-1]
+                    #adds two color tuples together
+                    l_color = ( min(nodes[-1][-1][0]+nextnode[0],1) , min(nodes[-1][-1][1]+nextnode[1],1) , min(nodes[-1][-1][2]+nextnode[2],1) )
 
-        nodes.append((nodekey[0]+laserdir[0],nodekey[1]+laserdir[1],l_color))
-    if main:
-        Mnodes = nodes.copy()
+            nodes.append((nodekey[0]+laserdir[0],nodekey[1]+laserdir[1],l_color))
+        if main == True:
+            Mnodes = nodes.copy()
+            ldirection = laserdir
+            break
+    if main != True:
+        return (cords[nodes[-1][0],nodes[-1][1]],nodes[-1][2])
 
 def drawpicture(picture,x,y,sizex,sizey):
     str(picture)
@@ -341,9 +370,9 @@ def erase():
                     break
 
 def switchgrid(switch):
-    global cords, placedshapes, gridindex, gridlist, nodes, notes
+    global cords, placedshapes, gridindex, gridlist, Mnodes, notes
     cords["group"] = placedshapes
-    cords["nodes"] = nodes
+    cords["nodes"] = Mnodes
     cords["notes"] = notes
     gridlist[gridindex] = cords
     gridindex = (gridindex+switch) % len(gridlist)
@@ -357,7 +386,7 @@ def switchgrid(switch):
         cords["nodes"] = []
         cords["notes"] = []
     placedshapes = cords["group"]
-    nodes = cords["nodes"]
+    Mnodes = cords["nodes"]
     notes = cords["notes"]
 
 def drawcircles():
@@ -378,6 +407,15 @@ def per(a,b,mode):
         return a*b/100
     if mode == 2:
         return a*(100-b)/100
+    
+def distance(point1, point2):
+    x1, y1 = point1
+    x2, y2 = point2
+    return ((x1-x2)^2+(y1-y2)^2)^0.5
+
+def get_textsize(text, size):
+    textSurface = font.render(str(text), size= size)[0].convert_alpha()
+    return textSurface.get_size()
 
 def drawhints():
     notex = bnotex+(sizex*gridx)+border*2
@@ -397,21 +435,18 @@ def drawhints():
     drawtext("Notes",notex-text_width/2+150,60,False,0,30)
 
     for i in range(len(notes)):
+        tcolor = (255,100,100)
+        snote = simulatelaser(notes[i][0])
+        if (notes[i][0],snote[0],snote[1]) == notes[i]:
+            tcolor = (0,255,100)
+        
         text_width, text_height = get_textsize("["+notes[i][0]+","+notes[i][1]+"]", 25)
         
-        drawtext("["+notes[i][0]+","+notes[i][1]+"]" ,notex+20 ,notey+70+i*30 ,False,getcolor(notes[i][2]),25)
+        drawtext("["+notes[i][0]+","+notes[i][1]+"]" ,notex+20 ,notey+70+i*30 ,False,tcolor,25)
 
-        pygame.draw.circle(screen, (0,0,0), ((notex+20+text_width+12), notey+70+(i*30)+(text_height/2)), 12)
+        pygame.draw.circle(screen, tcolor, ((notex+20+text_width+12), notey+70+(i*30)+(text_height/2)), 12)
         pygame.draw.circle(screen, getcolor(notes[i][2]), ((notex+20+text_width+12), notey+70+(i*30)+(text_height/2)), 12-3)
-
-def get_textsize(text, size):
-    textSurface = font.render(str(text), size= size)[0].convert_alpha()
-    return textSurface.get_size()
-
-def checknotes():
-    global notes
-    checked = []
-
+ 
 
 
 def render():
@@ -496,7 +531,7 @@ while running:
             if key == pygame.K_TAB:
                 erasing = not erasing
             if key == pygame.K_m:
-                crotation +30
+                no = True
         if event.type == pygame.MOUSEBUTTONUP:
             clicking = False
             if event.button == 1:
@@ -506,20 +541,20 @@ while running:
                 checkcursor()
                 if mousepos == "extended grid":
                     if mousecell in numberorder[:gridx]:
-                        laserdir = [0,1]
+                        ldirection = [0,1]
                     if mousecell in numberorder[gridx:gridx+gridy]:
-                        laserdir = [-1,0]
+                        ldirection = [-1,0]
                     if mousecell in letterorder[:gridy]:
-                        laserdir = [1,0]
+                        ldirection = [1,0]
                     if mousecell in letterorder[gridy:gridx+gridy]:
-                        laserdir = [0,-1]
+                        ldirection = [0,-1]
                     gemtouched = (0,0,0)
                     lcolor = (0,0,0)
-                    nextcell = (mx+laserdir[0],my+laserdir[1])
+                    nextcell = (mx+ldirection[0],my+ldirection[1])
                     if cords[nextcell] != "void":
                         lcolor = cords[nextcell][-1]
-                    lorigin = ((mx,my,gemtouched),laserdir)
-                    Mnodes = [(mx,my,gemtouched),(mx+laserdir[0],my+laserdir[1],lcolor)]
+                    lorigin = ((mx,my,gemtouched),ldirection)
+                    Mnodes = [(mx,my,gemtouched),(mx+ldirection[0],my+ldirection[1],lcolor)]
 
             #changes the current shape
             if event.button == 3:
@@ -553,15 +588,15 @@ while running:
             shouldredraw = False
             lx = lorigin[0][0]
             ly = lorigin[0][1]
-            laserdir = lorigin[1]
-            nextcell = (lx+laserdir[0],ly+laserdir[1])
+            ldirection = lorigin[1]
+            nextcell = (lx+ldirection[0],ly+ldirection[1])
             lcolor = (0,0,0)
             if cords[nextcell] != "void":
                 lcolor = cords[nextcell][-1]
-            Mnodes = [(lx,ly,(0,0,0)),(lx+laserdir[0],ly+laserdir[1],lcolor)]
+            Mnodes = [(lx,ly,(0,0,0)),(lx+ldirection[0],ly+ldirection[1],lcolor)]
             while pastnodes[:len(Mnodes)] == Mnodes:
                 simulatelaser(True)
-                if laserdir == "stop":
+                if ldirection == "stop":
                     break
             simulatelaser(True)
 
