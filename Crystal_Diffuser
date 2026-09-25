@@ -55,7 +55,7 @@ crotation = 210
 bnotex, notey = 250, 50
 nx ,ny = 0, 400
 nw ,nh = 200 , 300
-
+crosscolor = (255,70,70)
 
 #create and sets variables
 ratiox = 75
@@ -96,6 +96,8 @@ note1 ,note2 = "a","11"
 notex = bnotex+(sizex*gridx)+border*2
 selectednote = False
 mousevisible = True
+crossing = False
+crossedsquares = []
 def getcolor(item):
     #transform a color described in (red,yellow,blue) into (r,g,b)
     match item:
@@ -136,6 +138,10 @@ def drawsquare(x,y,mode):
             ccell = cords[(x,y)]
             if ccell != "void":
                 drawtriangle(getcolor(ccell[1]),ccell[0],x,y)
+        if (x,y) in crossedsquares:
+            ccx, ccy = x*sizex+border*morph+sizex/2 , y*sizey+border+sizey/2
+            pygame.draw.line(screen, crosscolor, (ccx-sizex/2,ccy-sizey/2), (ccx+sizex/2,ccy+sizey/2), 5)
+            pygame.draw.line(screen, crosscolor, (ccx-sizex/2,ccy+sizey/2), (ccx+sizex/2,ccy-sizey/2), 5)
 
 def drawgrid(mode):
     #repeats drawsquare() for the whole grid
@@ -364,7 +370,6 @@ def erase():
     global shouldredraw
     if checkcursor():
         checkcursor()
-
         if mousecell != "void":
             shouldredraw = True
             for i in range(len(placedshapes)):
@@ -373,12 +378,15 @@ def erase():
                         cords[(piece)] = "void"
                     placedshapes.pop(i) 
                     break
+        if (mx,my) in crossedsquares:
+            crossedsquares.remove((mx,my))
 
 def switchgrid(switch):
-    global cords, placedshapes, gridindex, gridlist, Mnodes, notes
+    global cords, placedshapes, gridindex, gridlist, Mnodes, notes, crossedsquares
     cords["group"] = placedshapes
     cords["nodes"] = Mnodes
     cords["notes"] = notes
+    cords["cross"] = crossedsquares
     gridlist[gridindex] = cords
     gridindex = (gridindex+switch) % len(gridlist)
     cords = gridlist[gridindex]
@@ -390,9 +398,11 @@ def switchgrid(switch):
         cords["group"] = []
         cords["nodes"] = []
         cords["notes"] = []
+        cords["cross"] = []
     placedshapes = cords["group"]
     Mnodes = cords["nodes"]
     notes = cords["notes"]
+    crossedsquares = cords["cross"]
 
 def drawcircles():
     rectangle = pygame.Rect((nx),(ny),nw,nh)
@@ -428,18 +438,25 @@ def get_textsize(text, size):
     return textSurface.get_size()
 
 def drawhints():
+    global crossednote
+    mousex, mousey = pygame.mouse.get_pos()
     notex = bnotex+(sizex*gridx)+border*2
     rectangle = pygame.Rect((notex),(notey),(300),(700))
     pygame.draw.rect(screen,(150,150,150), rectangle,0,20)
+
     rectangle = pygame.Rect((notex),(notey),(300),(50))
     pygame.draw.rect(screen,(120,120,120), rectangle,0,4)
+
     rectangle = pygame.Rect((notex),(notey),(300),(700))
     pygame.draw.rect(screen,(70,70,70), rectangle,5,20,4,4)
+
     text_width, text_height = get_textsize("notes", 30)
     drawtext("Notes",notex-text_width/2+150,60,False,0,30)
-    if gridindex == 0:
-        drawtext("Notes",notex-text_width/2+150,60,False,0,30)
-    else:
+
+    pygame.draw.circle(screen, (200,200,200), (notex+27.5,notey+27.5), 20)
+    pygame.draw.line(screen, (170,170,170), (notex+27.5-10,notey+27.5-10), (notex+27.5+10,notey+27.5+10), 5)
+    pygame.draw.line(screen, (170,170,170), (notex+27.5-10,notey+27.5+10), (notex+27.5+10,notey+27.5-10), 5)
+    if gridindex != 0:
         #drawtext("Notes",notex-text_width/2+150,60,False,getcolor(selectedcolor),30)
         text_width, text_height = get_textsize("+", 45)
         pygame.draw.circle(screen, (200,200,200), (notex+250+text_width/2,75+2.5), 20)
@@ -458,21 +475,24 @@ def drawhints():
         pygame.draw.circle(screen, (100,100,100), (nx+nw+15,ny+25),20)
         text_width, text_height = get_textsize("+", 45)
         drawtext("+",nx+nw+15-text_width/2,ny+25-text_height/2,False,(255,255,255),45)
-
+    crossednote = 500
     for i in range(len(notes)):
         tcolor = (255,100,100)
         snote = simulatelaser(notes[i][0])
-        
-        if (notes[i][0],snote[0],snote[1]) == notes[i]:
+        if (notes[i][0],snote[0],tuple(snote[1])) == notes[i]:
             tcolor = (0,255,100)
         
         text_width, text_height = get_textsize("["+notes[i][0]+","+notes[i][1]+"]", 25)
         drawtext("["+notes[i][0]+","+notes[i][1]+"]" ,notex+20 ,notey+70+i*30 ,False,tcolor,25)
         pygame.draw.circle(screen, tcolor, ((notex+20+text_width+12), notey+70+(i*30)+(text_height/2)), 12)
         pygame.draw.circle(screen, getcolor(notes[i][2]), ((notex+20+text_width+12), notey+70+(i*30)+(text_height/2)), 12-3)
-    
+        if mousex >= notex+20 and mousex <=notex+20+text_width+24 and mousey >= notey+70+i*30 and mousey <= notey+70+i*30+text_height:
+            pygame.draw.line(screen, (170,170,170), (notex+20-10,notey+70+i*30+text_height/2), (notex+20+text_width+34,notey+70+i*30+text_height/2), 3)
+            crossednote = i
+
+
 def render():
-    global preview, gridindex
+    global preview, gridindex, crossing
     screen.fill(fillcolor)
     drawgrid("grid")
     drawlaser()
@@ -491,7 +511,7 @@ def render():
         drawcircles()
     drawhints()
     if erasing and not noting:
-        preview = False
+        preview, crossing = False, False
         drawpicture("asset/eraser.png",mousex,mousey,12*4,13*4)
     if selectednote != False:
         text_width, text_height = get_textsize("["+note1+","+note2+"]", 35)
@@ -500,7 +520,16 @@ def render():
         if selectednote == 1:
             pygame.draw.line(screen, (170,170,170), (mousex,mousey), (cp1,ny+30), 2)
         if selectednote == 2:
-            pygame.draw.line(screen, (170,170,170), (mousex,mousey), (cp2,ny+30), 2)     
+            pygame.draw.line(screen, (170,170,170), (mousex,mousey), (cp2,ny+30), 2)
+
+    if crossing and not noting:
+        ccx, ccy = mx*sizex+border*morph+sizex/2 , my*sizey+border+sizey/2
+        if checkcursor():
+            pygame.draw.line(screen, crosscolor, (ccx-sizex/2,ccy-sizey/2), (ccx+sizex/2,ccy+sizey/2), 5)
+            pygame.draw.line(screen, crosscolor, (ccx-sizex/2,ccy+sizey/2), (ccx+sizex/2,ccy-sizey/2), 5)
+        else:
+            pygame.draw.line(screen, crosscolor, (mousex-sizex/2,mousey-sizey/2), (mousex+sizex/2,mousey+sizey/2), 5)
+            pygame.draw.line(screen, crosscolor, (mousex-sizex/2,mousey+sizey/2), (mousex+sizex/2,mousey-sizey/2), 5)
     pygame.display.update()
 
 
@@ -531,7 +560,7 @@ while running:
             if key == pygame.K_SPACE:
                 preview = not preview
                 if preview:
-                    erasing = False
+                    erasing, crossing = False, False
 
             #rotates the current shape
             if key == pygame.K_RIGHT:
@@ -553,7 +582,6 @@ while running:
             if key == pygame.K_e:
                 shapeindex = (shapeindex+1)%len(shapes)
             currentshape = shapes[shapeindex]
-
             if key == pygame.K_c:
                 shownotes = not shownotes
             if key == pygame.K_f:
@@ -564,6 +592,10 @@ while running:
                 erasing = not erasing
             if key == pygame.K_m:
                 no = True
+            if key  == pygame.K_LCTRL:
+                crossing = not crossing
+                if crossing:
+                    erasing, preview = False, False
         if event.type == pygame.MOUSEBUTTONUP:
             checkcursor()
             mousex, mousey = pygame.mouse.get_pos()
@@ -629,6 +661,9 @@ while running:
                                 ncolor = (1,1,1)
                         notes.append((note1,note2,ncolor))
                         noting = False
+                
+                if crossednote <= len(notes):
+                    notes.pop(crossednote)
                 text_width, text_height = get_textsize("+", 45)
 
                 if gridindex != 0:
@@ -636,7 +671,8 @@ while running:
                         noting = not noting
                         if noting:
                             erasing = False
-
+                if distance((notex+27.5,notey+27.5),(mousex,mousey)) <= 20:
+                    notes= []
 
             #changes the current shape
             if not noting:
@@ -662,8 +698,13 @@ while running:
                 if distance((cp2,ny+30),(mousex,mousey)) <= 15:
                     selectednote = 2
     mousevisible = True
+    ticks += 1
     if erasing and clicking:
         erase()
+    if crossing and not noting and clicking:
+        if checkcursor():
+            if (mx,my) not in crossedsquares:
+                crossedsquares.append((mx,my))
     if erasing:
         mousevisible = False
     if selectednote != False:
@@ -672,7 +713,6 @@ while running:
         pygame.mouse.set_visible(True)
     else:
         pygame.mouse.set_visible(False)
-    ticks += 1
     if Mnodes != []:
         if ticks % laserspeed == 1:
             simulatelaser(True)
